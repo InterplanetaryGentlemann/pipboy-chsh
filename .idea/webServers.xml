@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="9f0a04ee-d53e-4a35-a593-41f20e1867a2" name="pi zero pipboy">
+        <fileTransfer rootFolder="/home/pi" accessType="SFTP" host="192.168.178.128" port="22" sshConfigId="c40985a2-d5c7-4ea1-ae58-b820dbae4733" sshConfig="pi@192.168.178.128:22 key" keyPair="true">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" isUseSudo="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
