@@ -1,12 +1,10 @@
 import pygame
-import os
-import boot
+from boot import Boot
 import threading
 import settings
-import random
-import math
 import overlays
-import queue
+from tab_manager import TabManager
+
 
 
 class PipBoy:
@@ -16,18 +14,22 @@ class PipBoy:
         """
         self.screen = screen
         self.clock = clock
-        self.render_queue = queue.Queue()
+        self.states = iter(["boot", "main"])
+        self.current_sequence = "main"   
+        self.hum_started = False
+        
+        self.tab_manager = TabManager(self.screen)
 
         if settings.BOOT_SCREEN:
-            self.boot_instance = boot.Boot()
-            self.boot_thread = threading.Thread(target=self.boot_instance.boot_up_sequence, args=(self.screen, self.clock))
+            self.current_sequence = "boot"
+            self.boot_instance = Boot(self.screen)
+            self.boot_thread = threading.Thread(target=self.boot_instance.run)
             self.boot_thread.daemon = True
             self.boot_thread.start()
-            self.boot_thread.join()
-            del self.boot_instance
+
 
         if settings.SHOW_CRT:
-            self.overlay_instance = overlays.Overlays(self.render_queue)
+            self.overlay_instance = overlays.Overlays(self.screen)
             self.crt_thread = threading.Thread(target=self.overlay_instance.crt_effect)
             self.crt_thread.daemon = True
             self.crt_thread.start()
@@ -39,34 +41,41 @@ class PipBoy:
         pygame.mixer.music.set_volume(volume)
         pygame.mixer.music.play(loops)
 
+    
+    def render(self):
+        
+        self.screen.fill(settings.BACKGROUND)
+        
+        match self.current_sequence:
+            case "boot":
+                self.boot_instance.render()
+            case "main":
+                self.tab_manager.render()
+            case _:
+                pass
+        self.overlay_instance.render()
+        
+        pygame.display.flip()
+        
 
     def run(self):
-
-        if settings.SOUND_ON:
-            self.play_hum(settings.BACKGROUND_HUM, settings.VOLUME / 10, -1)
-
         # Main loop
-        running = True
-        tab_switch = False
-
-        while running:
-            while not self.render_queue.empty():
-                item = self.render_queue.get()  # Get the blit instruction from the queue
-                image = item[0]  # Get the image
-                pos = item[1]
-                try:
-                    alpha = item[2]
-                    image.set_alpha(alpha)  # Set alpha value
-                except IndexError:
+        while True:    
+            match self.current_sequence:
+                case "boot":
+                    self.boot_instance.start()
+                    self.boot_thread.join()
+                    # del self.boot_instance
+                    self.current_sequence = next(self.states)
+                case "main":
+                    if not self.hum_started:
+                        if settings.SOUND_ON:
+                            self.play_hum(settings.BACKGROUND_HUM, settings.VOLUME / 10, -1)        
                     pass
-                self.screen.blit(image, pos)  # Perform the blit
+                case _:
+                    pass
 
-
-
-            pygame.display.flip()  # Update the display
-            self.clock.tick(settings.FPS)  # Control the frame rate
-
-
+            pygame.time.wait(settings.SPEED)
 
 
 

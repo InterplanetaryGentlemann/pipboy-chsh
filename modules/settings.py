@@ -5,6 +5,7 @@ SCREEN_WIDTH = 320
 SCREEN_HEIGHT = 255
 
 FPS = 30
+SPEED = 1
 
 # Colors
 BACKGROUND = (0, 0, 0)
@@ -21,8 +22,7 @@ SWITCH_SOUND_CHANCE = 90
 
 
 # Boot-up sequence
-BOOT_SCREEN = True
-BOOT_SPEED = 40
+BOOT_SCREEN = False
 
 # Crt effect
 SHOW_CRT = True
@@ -53,25 +53,17 @@ BACKGROUND_HUM = "../sounds/pipboy/UI_PipBoy_Hum_LP.ogg"
 
 
 # Tab texts
-TAB_TEXTS = ["STAT", "INV", "DATA", "MAP", "RADIO"]
+TABS = ("STAT", "INV", "DATA", "MAP", "RADIO")
 
 # Tab margins
 TAB_MARGIN = 20
 TAB_VERTICAL_OFFSET = 1
 
-# Line thickness
-LINE_THICKNESS = 1
+TAB_VERTICAL_LINE_OFFSET = 10
 
-# Text tab margin
-TEXT_TAB_MARGIN = 6
+TAB_HORIZONTAL_LINE_OFFSET = 8
 
-# Glitch effect
-GLITCH_MOVE_CHANCE = 15
-
-BOTTOM_BAR_HEIGHT = 20
-BOTTOM_BAR_DIVIDER = 2
-
-SUB_TAB_MARGIN = 10
+TAB_SCREEN_EDGE_LENGTH = 4
 
 # RADIO TAB
 
@@ -90,11 +82,11 @@ SMALL_LINE_SIZE = GRAPH_SIZE / 40  # Size of the small lines
 
 WAVES = 15
 
-RADIO_STATIONS = [
+RADIO_STATIONS = (
     "Diamond City Radio",
     "Classical Radio",
     "Radio Freedom"
-]
+)
 
 TIMES_TO_PLAY = 2
 
