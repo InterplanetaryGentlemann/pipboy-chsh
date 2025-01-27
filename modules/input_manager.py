@@ -1,0 +1,47 @@
+import pygame
+import os
+from queue import Queue
+from threading import Lock
+
+
+
+class InputManager:
+    def __init__(self):
+        self.key_queue = Queue()
+        self.get_key_lock = Lock()
+        
+    
+    def handle_keyboard(self, event):
+        if event.type == pygame.KEYDOWN:
+            self.key_queue.put(event.key)
+            
+
+    def handle_quit(self, event):
+        if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+            pygame.quit()
+            quit()
+
+
+    def handle_input(self, tab_manager):
+        with self.get_key_lock:
+            while not self.key_queue.empty():
+                key = self.key_queue.get()
+                match key:
+                    case pygame.K_LEFT:
+                        tab_manager.switch_tab(False)
+                    case pygame.K_RIGHT:
+                        tab_manager.switch_tab(True)
+                    case pygame.K_DOWN:
+                        tab_manager.scroll_tab(False)
+                    case pygame.K_UP:
+                        tab_manager.scroll_tab(True)                     
+                    case _:
+                        pass
+                
+        
+    
+    def run(self):
+        for event in pygame.event.get():
+            self.handle_keyboard(event)
+            self.handle_quit(event)
+        pygame.time.wait(1)

@@ -4,11 +4,12 @@ import threading
 import settings
 import overlays
 from tab_manager import TabManager
+from input_manager import InputManager
 
 
 
 class PipBoy:
-    def __init__(self, screen, clock):
+    def __init__(self, screen, clock, input_manager):
         """
         Initialize the PipBoy object.
         """
@@ -19,6 +20,9 @@ class PipBoy:
         self.hum_started = False
         
         self.tab_manager = TabManager(self.screen)
+        
+        self.input_manager = input_manager
+        
 
         if settings.BOOT_SCREEN:
             self.current_sequence = "boot"
@@ -30,7 +34,7 @@ class PipBoy:
 
         if settings.SHOW_CRT:
             self.overlay_instance = overlays.Overlays(self.screen)
-            self.crt_thread = threading.Thread(target=self.overlay_instance.crt_effect)
+            self.crt_thread = threading.Thread(target=self.overlay_instance.run)
             self.crt_thread.daemon = True
             self.crt_thread.start()
 
@@ -40,6 +44,7 @@ class PipBoy:
         pygame.mixer.music.load(sound)
         pygame.mixer.music.set_volume(volume)
         pygame.mixer.music.play(loops)
+        self.hum_started = True
 
     
     def render(self):
@@ -53,6 +58,7 @@ class PipBoy:
                 self.tab_manager.render()
             case _:
                 pass
+            
         self.overlay_instance.render()
         
         pygame.display.flip()
@@ -60,7 +66,10 @@ class PipBoy:
 
     def run(self):
         # Main loop
-        while True:    
+        while True:
+            self.input_manager.run()    
+            self.input_manager.handle_input(self.tab_manager)
+            
             match self.current_sequence:
                 case "boot":
                     self.boot_instance.start()
@@ -70,8 +79,9 @@ class PipBoy:
                 case "main":
                     if not self.hum_started:
                         if settings.SOUND_ON:
-                            self.play_hum(settings.BACKGROUND_HUM, settings.VOLUME / 10, -1)        
-                    pass
+                            self.play_hum(settings.BACKGROUND_HUM, settings.VOLUME / 10, -1) 
+                    self.tab_manager.update_tabs()       
+                    
                 case _:
                     pass
 

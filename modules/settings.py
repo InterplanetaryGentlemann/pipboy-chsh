@@ -20,15 +20,13 @@ MUSIC_VOLUME = 0.3
 
 SWITCH_SOUND_CHANCE = 90
 
-
 # Boot-up sequence
 BOOT_SCREEN = False
 
 # Crt effect
 SHOW_CRT = True
 
-
-# Paths
+## Paths
 # Font
 MAIN_FONT_PATH = "../fonts/RobotoCondensed-Bold.ttf"
 ROBOTO_BOLD_PATH = "../fonts/Roboto-Bold.ttf"
@@ -38,10 +36,9 @@ TECH_MONO_FONT_PATH = "../fonts/TechMono.ttf"
 # Images
 CRT_OVERLAY = "../images/overlay.png"
 SCANLINE_OVERLAY = "../images/scanline.png"
+SCANLINES_OVERLAY = "../images/scanlines.png"
 CRT_STATIC = "../images/static"
 BOOT_THUMBS = "../images/boot"
-
-
 
 # Sounds
 BOOT_SOUND_A = "../sounds/pipboy/BootSequence/UI_PipBoy_BootSequence_A.ogg"
@@ -50,22 +47,37 @@ BOOT_SOUND_C = "../sounds/pipboy/BootSequence/UI_PipBoy_BootSequence_C.ogg"
 
 BACKGROUND_HUM = "../sounds/pipboy/UI_PipBoy_Hum_LP.ogg"
 
+TAB_SWITCH_SOUND = "../sounds/pipboy/BurstStatic"
 
+RADIO_BASE_FOLDER = "../sounds/radio"
 
 # Tab texts
 TABS = ("STAT", "INV", "DATA", "MAP", "RADIO")
 
-# Tab margins
+# Tab margins top
 TAB_MARGIN = 20
 TAB_VERTICAL_OFFSET = 1
-
 TAB_VERTICAL_LINE_OFFSET = 10
-
 TAB_HORIZONTAL_LINE_OFFSET = 8
-
 TAB_SCREEN_EDGE_LENGTH = 4
+TAB_HORIZONTAL_LENGTH  = TAB_HORIZONTAL_LINE_OFFSET // 1.1
+
+TAB_BOTTOM_MARGIN = 20
+
+# Tab margins bottom
+BOTTOM_BAR_HEIGHT = 20
+BOTTOM_BAR_MARGIN = 20
+
+# Tab margins side
+TAB_SIDE_MARGIN = 10
+
+# Glitch effect
+GLITCH_MOVE_CHANCE = 40
 
 # RADIO TAB
+
+RADIO_STATION_MARGIN = 10
+
 
 LIST_START_Y = 50
 LIST_OFFSET = 25

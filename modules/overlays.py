@@ -10,6 +10,7 @@ class Overlays:
         self.overlay_image.set_alpha(80)
         self.scanline_image = pygame.image.load(settings.SCANLINE_OVERLAY).convert_alpha()
         self.scanline_image.set_alpha(5)
+
         self.scanline_y = -self.scanline_image.get_height()
         self.scanline_height = self.scanline_image.get_height()
         self.screen = screen
@@ -18,9 +19,8 @@ class Overlays:
             for filename in os.listdir(settings.CRT_STATIC) if filename.endswith(".png")
         ]
 
-    def crt_effect(self):
-        """CRT effect using the queue"""
-
+    def run(self):
+        """CRT effect thread."""
         while True:
             self.scanline_y = (self.scanline_y + 2) % (settings.SCREEN_HEIGHT + self.scanline_height)
             self.current_crt_image = (self.current_crt_image + 1) % len(self.crt_static)
@@ -32,3 +32,4 @@ class Overlays:
         self.screen.blit(self.crt_static[self.current_crt_image], (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
         self.screen.blit(self.scanline_image, (0, (self.scanline_y - self.scanline_height)))
         self.screen.blit(self.overlay_image, (0, 0), special_flags=pygame.BLEND_RGBA_SUB)
+        
