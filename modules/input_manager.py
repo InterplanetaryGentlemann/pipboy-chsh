@@ -34,7 +34,9 @@ class InputManager:
                     case pygame.K_DOWN:
                         tab_manager.scroll_tab(False)
                     case pygame.K_UP:
-                        tab_manager.scroll_tab(True)                     
+                        tab_manager.scroll_tab(True)
+                    case pygame.K_RETURN:
+                        tab_manager.select_item()
                     case _:
                         pass
                 
@@ -44,4 +46,3 @@ class InputManager:
         for event in pygame.event.get():
             self.handle_keyboard(event)
             self.handle_quit(event)
-        pygame.time.wait(1)

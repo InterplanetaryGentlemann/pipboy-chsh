@@ -16,4 +16,5 @@ class Tab:
         
         for i in range(len(margins)):
             pygame.draw.rect(self.screen, settings.PIP_BOY_DARKER, (margins[i][0], settings.SCREEN_HEIGHT - settings.BOTTOM_BAR_HEIGHT, margins[i][1], settings.BOTTOM_BAR_HEIGHT))
-        pass
+
+

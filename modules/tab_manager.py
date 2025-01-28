@@ -16,6 +16,7 @@ class TabManager:
         self.tab_font_height = self.main_tab_font.get_height()
         self.tabs = settings.TABS
         self.current_tab_index = 0
+        self.previous_tab_index = 0
         self.tab_x_offset = []
         self.glitch_thread = None
         self.render_blur = False
@@ -67,12 +68,41 @@ class TabManager:
             blur = pygame.transform.box_blur(screen_copy, i)
             blur.set_alpha(180)
             self.screen.blit(blur, (0, 0), special_flags=pygame.BLEND_ADD)        
+  
+
+    def handle_tab_threads(self):
+        match self.current_tab_index:
+            case 0: # STAT
+                pass
+            case 1: # INV
+                pass
+            case 2: # DATA
+                pass
+            case 3: # MAP
+                pass
+            case 4: # RADIO
+                Thread(target=self.radio_tab.handle_threads, args=(True,)).start()
+        match self.previous_tab_index:
+            case 0: # STAT
+                pass
+            case 1: # INV
+                pass
+            case 2: # DATA
+                pass
+            case 3: # MAP
+                pass
+            case 4: # RADIO
+                Thread(target=self.radio_tab.handle_threads, args=(False,)).start()
+            case _:
+                pass
+            
                                     
 
     def switch_tab(self, direction):
 
         with self.switch_lock:
             # Switch tab index
+            self.previous_tab_index = self.current_tab_index
             self.current_tab_index = max(0, min((self.current_tab_index + (1 if direction else -1)) % len(self.tabs), len(self.tabs) - 1))
         
         if random.randrange(100) < settings.GLITCH_MOVE_CHANCE and (self.glitch_thread == None or not self.glitch_thread.is_alive()):
@@ -81,6 +111,7 @@ class TabManager:
         else:
             self.render_blur = True
         
+        self.handle_tab_threads()
         self.switch_tab_sound()
             
 
@@ -96,6 +127,21 @@ class TabManager:
                 pass
             case 4: # RADIO
                 self.radio_tab.change_stations(direction)
+            case _:
+                pass
+
+    def select_item(self):
+        match self.current_tab_index:
+            case 0: # STAT
+                pass
+            case 1: # INV
+                pass
+            case 2: # DATA
+                pass
+            case 3: # MAP
+                pass
+            case 4: # RADIO
+                self.radio_tab.select_station()
             case _:
                 pass
 
@@ -151,7 +197,6 @@ class TabManager:
 
 
     def render_tab(self):
- 
         match self.current_tab_index:
             case 0: # STAT
                 pass
@@ -167,20 +212,20 @@ class TabManager:
                 pass
             
 
-    def update_tabs(self):
-        match self.current_tab_index:
-            case 0: # STAT
-                pass
-            case 1: # INV
-                pass
-            case 2: # DATA
-                pass
-            case 3: # MAP
-                pass
-            case 4: # RADIO
-                self.radio_tab.update()
-            case _:
-                pass
+    # def update_tabs(self):
+    #     match self.current_tab_index:
+    #         case 0: # STAT
+    #             pass
+    #         case 1: # INV
+    #             pass
+    #         case 2: # DATA
+    #             pass
+    #         case 3: # MAP
+    #             pass
+    #         case 4: # RADIO
+    #             self.radio_tab.update()
+    #         case _:
+    #             pass
                             
 
 

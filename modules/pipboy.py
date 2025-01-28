@@ -21,22 +21,19 @@ class PipBoy:
         
         self.tab_manager = TabManager(self.screen)
         
-        self.input_manager = input_manager
+        self.input_manager = input_manager        
         
 
         if settings.BOOT_SCREEN:
             self.current_sequence = "boot"
             self.boot_instance = Boot(self.screen)
-            self.boot_thread = threading.Thread(target=self.boot_instance.run)
-            self.boot_thread.daemon = True
-            self.boot_thread.start()
+            threading.Thread(target=self.boot_instance.run, daemon=True).start()
 
 
         if settings.SHOW_CRT:
             self.overlay_instance = overlays.Overlays(self.screen)
-            self.crt_thread = threading.Thread(target=self.overlay_instance.run)
-            self.crt_thread.daemon = True
-            self.crt_thread.start()
+            threading.Thread(target=self.overlay_instance.run, daemon=True).start()
+
 
 
 
@@ -66,9 +63,10 @@ class PipBoy:
 
     def run(self):
         # Main loop
-        while True:
-            self.input_manager.run()    
+        while True:   
             self.input_manager.handle_input(self.tab_manager)
+            self.input_manager.run()
+            
             
             match self.current_sequence:
                 case "boot":
@@ -80,7 +78,7 @@ class PipBoy:
                     if not self.hum_started:
                         if settings.SOUND_ON:
                             self.play_hum(settings.BACKGROUND_HUM, settings.VOLUME / 10, -1) 
-                    self.tab_manager.update_tabs()       
+                    # self.tab_manager.update_tabs()       
                     
                 case _:
                     pass
