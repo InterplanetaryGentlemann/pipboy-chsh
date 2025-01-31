@@ -1,14 +1,17 @@
+from collections import deque
 import configparser
+import math
 import random
-import numpy as np
 import pygame
 import settings
 import os
 from tinytag import TinyTag
 from threading import Thread, Lock
-from typing import Dict, Optional, List, Tuple
+from typing import Dict
 from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
+import numpy as np
+
 
 class RadioTab:
     def __init__(self, screen, tab_instance, draw_space):
@@ -21,6 +24,7 @@ class RadioTab:
         self.amount_of_stations = 0
         self.selected_station_index = 0
         self.active_station_index = None
+        self.previous_station_index = None
         self.station_playing = False
 
         # Pre-calculate constants
@@ -41,25 +45,27 @@ class RadioTab:
         Thread(target=self.load_radio_stations, daemon=True).start()
         
         """Initialize visualiser."""
-        self.wave_points = []
-        for point in range(settings.RADIO_WAVE_POINTS):
-            if point % 2 == 0:
-                self.wave_points.append(random.randint(settings.RADIO_WAVE_MIN, settings.RADIO_WAVE_MAX))
-            else:
-                self.wave_points.append(-self.wave_points[-1]) # Add negative of previous value
-                
-        self.wave_xy = [[]]
-        self.wave_alternator = True
-        
+        self.wave_points = deque(maxlen=128)  # Reduced buffer size
         self.wave_point_lock = Lock()
         
-        self.visualizer_size = (settings.SCREEN_WIDTH  // 2) - (settings.TAB_SIDE_MARGIN * 2)
+        # Optimized visualizer parameters
+        self.visualizer_size = (settings.SCREEN_WIDTH // 2) - (settings.TAB_SIDE_MARGIN * 2)
+        # Pre-calculated x positions
+        self.x_positions = [i * (self.visualizer_size / 128) for i in range(128)]
         
-        self.visualizer_thread = None
+        # Wave generation parameters
+        self.phase = 0.0
+        self.frequency = 1.0
+        self.amplitude = 1.0
+        self.target_frequency = 1.0
+        self.target_amplitude = 1.0
+        self.smoothing_factor = 0.8  # Adjusted for better smoothing
+        
+        self.change_station_wave_counter = 0
+        
+        # Thread control
         self.visualizer_thread_running = False
-        
-        self.waveform = []     
-        
+        self.visualizer_thread = None
                 
 
     @lru_cache(maxsize=32)
@@ -189,39 +195,66 @@ class RadioTab:
         self.selected_station_text = self.main_font.render(selected_station_name, True, settings.PIP_BOY_DARKER)
 
 
+    # -------------------- Visualiser --------------------
+
+    def set_amp_freq(self, amp_min, amp_max, freq_min, freq_max):
+        """Set the amplitude and frequency of the visualiser wave."""
+        self.target_frequency =  np.random.uniform(freq_min, freq_max)
+        self.target_amplitude = np.random.uniform(amp_min, amp_max)
+ 
+    
+    def change_visualizer_wave(self):
+        """Update frequency, amplitude, and phase for smoother wave generation."""
+        # Smoothly transition frequency and amplitude over time
+        self.frequency += (self.target_frequency - self.frequency) * self.smoothing_factor
+        self.amplitude += (self.target_amplitude - self.amplitude) * self.smoothing_factor
+        
+        # Update phase with smooth wrapping
+        self.phase = (self.phase + self.frequency * 0.08) % (2 * math.pi)
+        
+        # Generate new point with smoothed sine wave
+        new_point = np.sin(self.phase) * self.amplitude
+        
+        if not self.station_playing and abs(new_point) < 0.05:
+            self.set_amp_freq(0.05, 0.2, 0.2, 0.8)
+            self.change_station_wave_counter = 0
+        elif self.active_station_index != self.previous_station_index:
+            self.set_amp_freq(0.1, 0.6, 5.0, 9.0)
+            self.change_station_wave_counter = random.randint(20, 100)
+            self.previous_station_index = self.active_station_index
+        elif self.change_station_wave_counter > 0:
+            self.set_amp_freq(0.1, 0.6, 5.0, 9.0)
+            self.change_station_wave_counter -= 1
+        elif self.change_station_wave_counter == 1:
+            self.set_amp_freq(0.4, 1.5, 1.0, 3.0)
+        elif abs(new_point) < 0.05 and np.random.random() < 0.8:
+            self.set_amp_freq(0.4, 1.5, 1.0, 3.0)
+        
+        with self.wave_point_lock:
+            self.wave_points.append(new_point)
+                
+
     # -------------------- Threads --------------------
         
     def update_visualiser(self):
+        """Generate and update smoother sine wave points for the visualizer."""
+        # Pre-allocate wave points array
+        wave_buffer = np.zeros(self.visualizer_size)
+
+        # Generate smoother sine wave points over the entire buffer
+        phase_values = np.linspace(0, 2 * np.pi, self.visualizer_size) + self.phase
+        wave_buffer = np.sin(phase_values) * self.amplitude
+
+        with self.wave_point_lock:
+            # Append newly generated points to the existing wave
+            self.wave_points.extend(wave_buffer)
+        
+        for _ in range(self.visualizer_size):
+            self.change_visualizer_wave()
+
         while self.visualizer_thread_running:
-            if self.wave_alternator:
-                # Generate a new random value
-                new_point = random.randint(settings.RADIO_WAVE_MIN, settings.RADIO_WAVE_MAX)
-            else:
-                # Alternate with the negative of the previous value
-                new_point = -self.wave_points[-1]
-            
-            self.wave_points.append(new_point)
-            self.wave_alternator = not self.wave_alternator
-
-            # Limit the length of the wave points
-            max_length = random.randint(
-                settings.RADIO_WAVE_POINTS,
-                settings.RADIO_WAVE_POINTS + settings.RADIO_WAVE_VARIANCE
-            )
-            if len(self.wave_points) > max_length:
-                self.wave_points.pop(0)
-            
-            with self.wave_point_lock:    
-                self.wave_xy = []
-                for i, point in enumerate(self.wave_points):
-                    self.wave_xy.append(
-                        (i * (self.visualizer_size // len(self.wave_points)) + settings.SCREEN_WIDTH // 2, 
-                        settings.SCREEN_HEIGHT //2  - (point * settings.RADIO_WAVE_MAX))
-                    )
-                
-            
-            pygame.time.wait(settings.SPEED * 100)
-
+            self.change_visualizer_wave()
+            pygame.time.wait(settings.SPEED * 5)
 
 
     def handle_threads(self, tab_selected: bool):
@@ -274,14 +307,24 @@ class RadioTab:
 
     def render_visualiser_waves(self):
         """Render the visualiser waves."""
-        if not self.radio_stations or not self.wave_xy:
-            return
-
-        # xy = [[]]
-        # for i in range(len(self.wave_points)):
-        #     xy[i].append((self.visualizer_size // len(self.wave_points), self.wave_points[i]))
+        with self.wave_point_lock:
+            if len(self.wave_points) < 2:
+                return
+            # Convert to numpy array once
+            points = np.array(self.wave_points)
             
-        # pygame.draw.lines(self.screen, settings.PIP_BOY_GREEN, False, self.wave_xy, 2)
+        # Calculate visualizer position
+        x_positions = np.array(self.x_positions[:len(points)])
+        vis_x = settings.SCREEN_WIDTH // 2
+        vis_y = self.draw_space[0]
+        midpoint_y = vis_y + self.visualizer_size // 2
+        
+        y_coords = midpoint_y + points * (self.visualizer_size // 2 - 5)
+        x_coords = vis_x + x_positions
+        
+        points = np.column_stack((x_coords, y_coords))
+        # Draw in one operation
+        pygame.draw.lines(self.screen, settings.PIP_BOY_GREEN, False, points.astype(int), 1)
 
 
     def render(self):
@@ -289,75 +332,3 @@ class RadioTab:
         self.tab_instance.render_footer(((0, settings.SCREEN_WIDTH),))
         self.render_station_list()
         self.render_visualiser_waves()
-
-# class Animation(game.Entity):
-#
-#     def __init__(self):
-#         super(Animation, self).__init__()
-#
-#         self.width, self.height = 250, 250
-#         self.center = [self.width / 2, self.height / 2]
-#         self.image = pygame.Surface((self.width, self.height))
-#         self.animation_time = 0.04  # 25 fps
-#         self.prev_time = 0
-#         self.index = 0
-#         self.prev_song = None
-#
-#     def render(self, *args, **kwargs):
-#         global self.waveform
-#         self.current_time = time.time()
-#         self.delta_time = self.current_time - self.prev_time
-#
-#         if self.delta_time >= self.animation_time:
-#             self.prev_time = self.current_time
-#
-#             if not song:
-#                 self.image.fill((0, 0, 0))
-#                 pygame.draw.line(self.image, [0, 255, 0], [0, self.height / 2], [self.width, self.height / 2], 2)
-#
-#             elif song:
-#                 self.image.fill((0, 0, 0))
-#                 self.index += 3
-#
-#                 if song != self.prev_song:
-#                     self.prev_song = song
-#
-#                     if self.waveform:
-#                         print("Loading cached self.waveform for", song, "Waveform length =", len(self.waveform))
-#                     else:
-#                         print("Generating self.waveform from", song, "Waveform length =", len(self.waveform))
-#                         frame_skip = int(48000 / 75)
-#                         amplitude = pygame.sndarray.array(pygame.mixer.Sound(song))  # Load the sound file)
-#                         amplitude = amplitude[:, 0] + amplitude[:, 1]
-#
-#                         amplitude = amplitude[::frame_skip]
-#
-#                         # scale the amplitude to 1/4th of the frame height and translate it to height/2(central line)
-#                         max_amplitude = max(amplitude)
-#                         for i in range(len(amplitude)):
-#                             amplitude[i] = float(amplitude[i]) / max_amplitude * int(
-#                                 self.height / 2.5) + self.height / 2
-#
-#                         self.waveform = [int(self.height / 2)] * self.width + list(amplitude)
-#                         for x in range(125):  # Add end frames
-#                             self.waveform.append(125)
-#
-#                     # print("new start position = ",settings.START_POS)
-#                     if not start_pos == 0:
-#                         self.index = int(start_pos * 75)  # Adjust for new start position
-#                     else:
-#                         self.index = 5
-#                     # print("New index=", self.index)
-#                 length = len(self.waveform)
-#                 if self.index >= length - 5:
-#                     self.index = 0
-#
-#                 if length > 0:
-#                     prev_x, prev_y = 0, self.waveform[self.index]
-#                     for x, y in enumerate(self.waveform[self.index + 1:self.index + 1 + self.width][::1]):
-#                         pygame.draw.line(self.image, [0, 255, 0], [prev_x, prev_y], [x, y], 2)
-#                         prev_x, prev_y = x, y
-#
-#                 # Credit to https://github.com/prtx/Music-Visualizer-in-Python/blob/master/music_visualizer.py
-#
-#
