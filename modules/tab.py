@@ -18,3 +18,11 @@ class Tab:
             pygame.draw.rect(self.screen, settings.PIP_BOY_DARKER, (margins[i][0], settings.SCREEN_HEIGHT - settings.BOTTOM_BAR_HEIGHT, margins[i][1], settings.BOTTOM_BAR_HEIGHT))
 
 
+    def play_sfx(self, sound_file, volume=settings.VOLUME, start=0):
+        """
+        Play a sound file.
+        """
+        if settings.SOUND_ON:
+            sound = pygame.mixer.Sound(sound_file)
+            sound.set_volume(volume)
+            sound.play(start)
