@@ -45,46 +45,49 @@ class RadioTab:
         Thread(target=self.load_radio_stations, daemon=True).start()
         
         """Initialize visualiser."""
-        self.wave_points = deque(maxlen=256)
+        # Performance optimization: Pre-calculate constants and reduce object creation
+        self.SCREEN_HALF_WIDTH = settings.SCREEN_WIDTH // 2
+        self.VISUALIZER_SIZE = self.SCREEN_HALF_WIDTH - (settings.TAB_SIDE_MARGIN * 2) - settings.RADIO_WAVE_VISUALIZER_SIZE_OFFSET
+        self.WAVE_POINTS_LENGTH = 128  # Reduced from 256 for better performance
+        
+        # Use numpy arrays instead of deque for better performance
+        self.wave_points = np.zeros(self.WAVE_POINTS_LENGTH)
         self.wave_point_lock = Lock()
         
-        # Optimized visualizer parameters
-        self.visualizer_size = (settings.SCREEN_WIDTH // 2) - (settings.TAB_SIDE_MARGIN * 2) - settings.RADIO_WAVE_VISUALIZER_SIZE_OFFSET
-        # Pre-calculated x positions
-        self.x_positions = np.linspace(0, self.visualizer_size, 256)
+        # Pre-calculate x positions and store as integer array
+        self.x_positions = np.linspace(0, self.VISUALIZER_SIZE, self.WAVE_POINTS_LENGTH).astype(np.int32)
         
-        # Wave generation parameters
-        self.phase = 0.0
-        self.frequency = 1.0
-        self.amplitude = 1.0
-        self.target_frequency = 1.0
-        self.target_amplitude = 1.0
+        # Optimize wave parameters using numpy arrays for vectorized operations
+        self.waves = np.array([
+            # freq, amp, phase, target_freq, target_amp
+            [1.0, 0.5, 0.0, 1.0, 0.5],
+            [2.0, 0.3, 0.0, 2.0, 0.3],
+            [3.0, 0.2, 0.0, 3.0, 0.2]
+        ])
         
-        self.change_station_wave_counter = 0
+        # Cache frequently used values
+        self.smoothing_factor = 0.05
+        self.vis_x = self.SCREEN_HALF_WIDTH + (settings.RADIO_WAVE_VISUALIZER_SIZE_OFFSET // 2)
+        self.vis_y = self.draw_space[0]
+        self.midpoint_y = self.vis_y + self.VISUALIZER_SIZE // 2
+        
+        # Wave patterns as numpy arrays for faster access
+        self.wave_patterns = {
+            'idle': np.array([[0.2, 0.8], [0.05, 0.2]]),
+            'playing': np.array([[1.0, 4.0], [0.4, 1.5]]),
+            'changing': np.array([[2.0, 6.0], [0.1, 0.6]])
+        }
         
         # Thread control
         self.visualizer_thread_running = False
         self.visualizer_thread = None
         
+        # State tracking
+        self.change_station_wave_counter = 0
         
-        # Multi-wave parameters
-        self.waves = [
-            {"phase": 0.0, "freq": 1.0, "amp": 0.5, "target_freq": 1.0, "target_amp": 0.5},
-            {"phase": 0.0, "freq": 2.0, "amp": 0.3, "target_freq": 2.0, "target_amp": 0.3},
-            {"phase": 0.0, "freq": 3.0, "amp": 0.2, "target_freq": 3.0, "target_amp": 0.2}
-        ]
+        # Pre-allocate surface for double buffering
+        self.wave_surface = pygame.Surface((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT), pygame.SRCALPHA)
         
-        self.smoothing_factor = 0.05  # Slower smoothing for more natural transitions
-        
-        # Different wave patterns
-        self.wave_patterns = {
-            'idle': {'freq_range': (0.2, 0.8), 'amp_range': (0.05, 0.2)},
-            'playing': {'freq_range': (0.4, 1.0), 'amp_range': (0.4, 1.5)},
-            'changing': {'freq_range': (2.0, 5.0), 'amp_range': (0.1, 0.6)}
-        }
-        
-        self.vis_x = settings.SCREEN_WIDTH // 2 + (settings.RADIO_WAVE_VISUALIZER_SIZE_OFFSET // 2)
-        self.vis_y = self.draw_space[0]
                 
 
     @lru_cache(maxsize=32)
@@ -216,31 +219,28 @@ class RadioTab:
 
     # -------------------- Visualiser --------------------
     def set_wave_pattern(self, pattern_name):
-        """Set wave parameters based on predefined patterns."""
+        """Set wave parameters using vectorized operations."""
         pattern = self.wave_patterns[pattern_name]
-        for wave in self.waves:
-            wave["target_freq"] = np.random.uniform(*pattern['freq_range'])
-            wave["target_amp"] = np.random.uniform(*pattern['amp_range'])
+        random_values = np.random.uniform(
+            pattern[:, 0],
+            pattern[:, 1],
+            size=(len(self.waves), 2)
+        )
+        self.waves[:, 3] = random_values[:, 0]  # target_freq
+        self.waves[:, 4] = random_values[:, 1]  # target_amp
     
     def change_visualizer_wave(self):
-        """Generate complex waveform from multiple sine waves."""
-        total_wave = 0
+        """Generate complex waveform using vectorized operations."""
+        # Vectorized parameter transitions
+        self.waves[:, 0:2] += (self.waves[:, 3:5] - self.waves[:, 0:2]) * self.smoothing_factor
         
-        for wave in self.waves:
-            # Smooth parameter transitions
-            wave["freq"] += (wave["target_freq"] - wave["freq"]) * self.smoothing_factor
-            wave["amp"] += (wave["target_amp"] - wave["amp"]) * self.smoothing_factor
-            
-            # Update phase with smooth wrapping
-            wave["phase"] = (wave["phase"] + wave["freq"] * 0.08) % (2 * math.pi)
-            
-            # Add this wave component
-            total_wave += np.sin(wave["phase"]) * wave["amp"]
+        # Update phases
+        self.waves[:, 2] = (self.waves[:, 2] + self.waves[:, 0] * 0.08) % (2 * np.pi)
         
-        # Normalize the combined wave
-        total_wave /= len(self.waves)
+        # Calculate total wave using vectorized operations
+        total_wave = np.sum(np.sin(self.waves[:, 2]) * self.waves[:, 1]) / len(self.waves)
         
-        # State-based pattern selection
+        # State-based pattern selection with optimized conditions
         if not self.station_playing and abs(total_wave) < 0.05:
             self.set_wave_pattern('idle')
             self.change_station_wave_counter = 0
@@ -252,34 +252,23 @@ class RadioTab:
             self.change_station_wave_counter -= 1
             if self.change_station_wave_counter == 1:
                 self.set_wave_pattern('playing')
-        elif abs(total_wave) < 0.05 and np.random.random() < 0.1:
+        elif abs(total_wave) < 0.05 and random.random() < 0.1:
             self.set_wave_pattern('playing')
         
         with self.wave_point_lock:
-            self.wave_points.append(total_wave)
+            # Roll the array instead of using deque
+            self.wave_points = np.roll(self.wave_points, -1)
+            self.wave_points[-1] = total_wave
+
                 
 
     # -------------------- Threads --------------------
         
     def update_visualiser(self):
-        """Generate and update smoother sine wave points for the visualizer."""
-        # Pre-allocate wave points array
-        wave_buffer = np.zeros(self.visualizer_size)
-
-        # Generate smoother sine wave points over the entire buffer
-        phase_values = np.linspace(0, 2 * np.pi, self.visualizer_size) + self.phase
-        wave_buffer = np.sin(phase_values) * self.amplitude
-
-        with self.wave_point_lock:
-            # Append newly generated points to the existing wave
-            self.wave_points.extend(wave_buffer)
-        
-        for _ in range(self.visualizer_size * 2):
-            self.change_visualizer_wave()
-
+        """Optimized visualizer update loop."""
         while self.visualizer_thread_running:
             self.change_visualizer_wave()
-            pygame.time.wait(settings.SPEED * 2)
+            pygame.time.wait(settings.SPEED * 3)  # Ensure minimum delay of 1ms
 
 
     def handle_threads(self, tab_selected: bool):
@@ -333,30 +322,29 @@ class RadioTab:
     def render_visualizer_waves(self):
         """Render the visualiser waves."""
         with self.wave_point_lock:
-            if len(self.wave_points) < 2:
-                return
-            # Convert to numpy array once
-            points = np.array(self.wave_points)
-            
-
-        midpoint_y = self.vis_y + self.visualizer_size // 2
+            points = self.wave_points.copy()
         
-        # Calculate smooth curves using interpolation
-        x_coords = self.vis_x + self.x_positions[:len(points)]
-        y_coords = midpoint_y + points * (self.visualizer_size // 2)
+        # Clear the wave surface
+        self.wave_surface.fill((0, 0, 0, 0))
         
-        # Create point pairs for the main wave
-        points = np.column_stack((x_coords, y_coords))
+        # Calculate coordinates using vectorized operations
+        x_coords = self.vis_x + self.x_positions
+        y_coords = self.midpoint_y + (points * (self.VISUALIZER_SIZE // 2)).astype(np.int32)
         
+        # Create points array efficiently
+        points_array = np.column_stack((x_coords, y_coords))
         
-        # Draw main wave
+        # Draw the wave
         pygame.draw.lines(
-            self.screen,
+            self.wave_surface,
             settings.PIP_BOY_GREEN,
             False,
-            points.astype(int),
+            points_array,
             1
         )
+        
+        # Blit the wave surface to the main screen
+        self.screen.blit(self.wave_surface, (0, 0))
 
 
     def render(self):
