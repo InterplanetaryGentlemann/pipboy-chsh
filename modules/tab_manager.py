@@ -4,7 +4,8 @@ import pygame
 import random
 import math
 from threading import Thread, Lock
-from tabs.radio import RadioTab
+from tabs.radio_tab.radio_tab import RadioTab
+from tabs.stat_tab.stat_tab import StatTab
 from tab import Tab
 
 
@@ -17,6 +18,10 @@ class TabManager:
         self.tabs = settings.TABS
         self.current_tab_index = 0
         self.previous_tab_index = 0
+        
+        self.current_sub_tab_index = [0] * len(self.tabs)
+
+        
         self.tab_x_offset = []
         self.glitch_thread = None
         self.render_blur = False
@@ -29,7 +34,15 @@ class TabManager:
         
         self.tab_base = Tab(self.screen)
         self.radio_tab = RadioTab(self.screen, self.tab_base, self.draw_space)
+        self.stat_tab = StatTab(self.screen, self.tab_base, self.draw_space)
         
+        self.subtab_surfaces = {}  # Pre-rendered text surfaces for all states
+        self.subtab_total_widths = {}  # Pre-calculated total width for each tab's subtabs
+        self.subtab_offsets = {}  # Pre-calculated positioning data
+        self.init_subtab_data()
+        
+        
+
         
     def play_sfx(self, sound_file, volume=settings.VOLUME):
         if settings.SOUND_ON:
@@ -40,9 +53,44 @@ class TabManager:
     def switch_tab_sound(self):
         sound = random.choice(os.listdir(settings.TAB_SWITCH_SOUND))      
         self.play_sfx(os.path.join(settings.TAB_SWITCH_SOUND, sound), settings.VOLUME / 3)                
+
+    def init_subtab_data(self):
+        """Pre-render all possible subtab states and calculate positioning data"""
+        for tab_name, subtabs in settings.SUBTABS.items():
+            # Store surfaces for both active and inactive states
+            self.subtab_surfaces[tab_name] = []
+            total_width = 0
+            width_list = []
+            
+            for subtab in subtabs:
+                # Pre-render both color states
+                active_surf = self.main_tab_font.render(subtab, True, settings.PIP_BOY_GREEN)
+                inactive_surf = self.main_tab_font.render(subtab, True, settings.PIP_BOY_DARKER)
+                width = active_surf.get_width()
+                
+                self.subtab_surfaces[tab_name].append((active_surf, inactive_surf))
+                width_list.append(width)
+                total_width += width + settings.SUBTAB_SPACING
+            
+            # Store total width (minus last spacing)
+            self.subtab_total_widths[tab_name] = total_width - settings.SUBTAB_SPACING
+            
+            # Pre-calculate all possible offset positions for centering
+            self.subtab_offsets[tab_name] = []
+            cumulative_width = 0
+            
+            for i, width in enumerate(width_list):
+                # Calculate offset needed to center this subtab under main tab
+                main_tab_center = self.tab_x_offset[self.tabs.index(tab_name)] + \
+                                self.main_tab_font.size(tab_name)[0] / 2
+                subtab_center = cumulative_width + (width / 2)
+                required_offset = main_tab_center - subtab_center
+                
+                self.subtab_offsets[tab_name].append(required_offset)
+                cumulative_width += width + settings.SUBTAB_SPACING
+                
             
     def init_tab_text(self):
-    
         total_tab_width = sum(self.main_tab_font.size(tab)[0] for tab in self.tabs)
         tab_spacing = (settings.SCREEN_WIDTH - total_tab_width - 2 * settings.TAB_MARGIN) // (len(self.tabs) + 1)
         self.tab_x_offset.append(settings.TAB_MARGIN + tab_spacing)
@@ -95,8 +143,6 @@ class TabManager:
                 Thread(target=self.radio_tab.handle_threads, args=(False,)).start()
             case _:
                 pass
-            
-                                    
 
     def switch_tab(self, direction):
 
@@ -113,7 +159,20 @@ class TabManager:
         
         self.handle_tab_threads()
         self.switch_tab_sound()
-            
+
+
+    def switch_sub_tab(self, direction):
+        current_main_index = self.current_tab_index
+        current_sub_index = self.current_sub_tab_index[current_main_index]
+        subtabs = settings.SUBTABS.get(self.tabs[current_main_index], [])
+        
+        if not subtabs:
+            return
+        
+        new_index = current_sub_index + (1 if direction else -1)
+        new_index = max(0, min(new_index, len(subtabs) - 1))
+        self.current_sub_tab_index[current_main_index] = new_index
+    
 
     def scroll_tab(self, direction):
         match self.current_tab_index:
@@ -195,11 +254,39 @@ class TabManager:
         pygame.draw.line(self.screen, settings.PIP_BOY_GREEN, (settings.SCREEN_WIDTH - 1,settings.TAB_SCREEN_EDGE_LENGTH + self.tab_font_height), (settings.SCREEN_WIDTH - 1, self.tab_font_height ), 1)
         
 
+    def render_sub_tabs(self):
+        current_tab_name = self.tabs[self.current_tab_index]
+        subtabs = settings.SUBTABS.get(current_tab_name, [])
+        current_sub_index = self.current_sub_tab_index[self.current_tab_index]
+        
+        if not subtabs or current_sub_index >= len(subtabs):
+            return
+
+        # Get pre-calculated values
+        surfaces = self.subtab_surfaces[current_tab_name]
+        start_x = self.subtab_offsets[current_tab_name][current_sub_index]
+        y_pos = self.tab_font_height + settings.TAB_SCREEN_EDGE_LENGTH + settings.SUBTAB_VERTICAL_OFFSET
+        
+        # Calculate render boundaries
+        screen_width = settings.SCREEN_WIDTH
+        
+        # Only draw visible portions
+        current_x = start_x
+        for i, (active_surf, inactive_surf) in enumerate(surfaces):
+            width = active_surf.get_width()
+            
+            # Only draw if visible (simple culling)
+            if current_x + width > 0 and current_x < screen_width:
+                surface = active_surf if i == current_sub_index else inactive_surf
+                self.screen.blit(surface, (current_x, y_pos))
+            
+            current_x += width + settings.SUBTAB_SPACING
+
 
     def render_tab(self):
         match self.current_tab_index:
             case 0: # STAT
-                pass
+                self.stat_tab.render()
             case 1: # INV
                 pass
             case 2: # DATA
@@ -231,8 +318,10 @@ class TabManager:
 
     def render(self):
         self.render_header()
-        self.render_tab()
-        
+        self.render_sub_tabs()
+
+        self.render_tab()  
+                    
         if self.render_blur:
             self.tab_blur()
             self.render_blur = False

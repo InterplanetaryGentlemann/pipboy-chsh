@@ -37,6 +37,10 @@ class InputManager:
                         tab_manager.scroll_tab(True)
                     case pygame.K_RETURN:
                         tab_manager.select_item()
+                    case pygame.K_a:
+                        tab_manager.switch_sub_tab(False)
+                    case pygame.K_d:
+                        tab_manager.switch_sub_tab(True)
                     case _:
                         pass
                 

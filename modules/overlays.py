@@ -18,6 +18,10 @@ class Overlays:
             pygame.image.load(os.path.join(settings.CRT_STATIC, filename)).convert_alpha()
             for filename in os.listdir(settings.CRT_STATIC) if filename.endswith(".png")
         ]
+        
+        self.bloom_overlay = pygame.image.load(settings.BLOOM_OVERLAY).convert_alpha()
+        self.bloom_overlay.set_alpha(20)
+        
 
     def run(self):
         """CRT effect thread."""
@@ -32,4 +36,5 @@ class Overlays:
         self.screen.blit(self.crt_static[self.current_crt_image], (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
         self.screen.blit(self.scanline_image, (0, (self.scanline_y - self.scanline_height)))
         self.screen.blit(self.overlay_image, (0, 0), special_flags=pygame.BLEND_RGBA_SUB)
+        self.screen.blit(self.bloom_overlay, (0, 0))
         

@@ -45,7 +45,6 @@ class PipBoy:
 
     
     def render(self):
-        
         self.screen.fill(settings.BACKGROUND)
         
         match self.current_sequence:
@@ -55,11 +54,20 @@ class PipBoy:
                 self.tab_manager.render()
             case _:
                 pass
+        
+        # Bloom effect implementation
+        if settings.BLOOM_EFFECT:
+            green_tint = pygame.Surface((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
+            green_tint.fill((50, 255, 50))
+            green_tint.set_alpha(10)
             
+            # Blend the blurred image with additive blending
+            self.screen.blit(green_tint, (0, 0))
+        
+        # Render CRT overlay
         self.overlay_instance.render()
         
         pygame.display.flip()
-        
 
     def run(self):
         # Main loop
