@@ -49,7 +49,7 @@ class RadioTab:
         self.wave_point_lock = Lock()
         
         # Optimized visualizer parameters
-        self.visualizer_size = (settings.SCREEN_WIDTH // 2) - (settings.TAB_SIDE_MARGIN * 2) - settings.RADIO_WAVE_VISUALISER_SIZE_OFFSET
+        self.visualizer_size = (settings.SCREEN_WIDTH // 2) - (settings.TAB_SIDE_MARGIN * 2) - settings.RADIO_WAVE_VISUALIZER_SIZE_OFFSET
         # Pre-calculated x positions
         self.x_positions = np.linspace(0, self.visualizer_size, 256)
         
@@ -83,7 +83,7 @@ class RadioTab:
             'changing': {'freq_range': (2.0, 5.0), 'amp_range': (0.1, 0.6)}
         }
         
-        self.vis_x = settings.SCREEN_WIDTH // 2 + (settings.RADIO_WAVE_VISUALISER_SIZE_OFFSET // 2)
+        self.vis_x = settings.SCREEN_WIDTH // 2 + (settings.RADIO_WAVE_VISUALIZER_SIZE_OFFSET // 2)
         self.vis_y = self.draw_space[0]
                 
 
@@ -330,7 +330,7 @@ class RadioTab:
         self.screen.blit(view_surface, (settings.TAB_SIDE_MARGIN, self.draw_space[0]))
 
 
-    def render_visualiser_waves(self):
+    def render_visualizer_waves(self):
         """Render the visualiser waves."""
         with self.wave_point_lock:
             if len(self.wave_points) < 2:
@@ -363,4 +363,4 @@ class RadioTab:
         """Render the radio tab."""
         self.tab_instance.render_footer(((0, settings.SCREEN_WIDTH),))
         self.render_station_list()
-        self.render_visualiser_waves()
+        self.render_visualizer_waves()
