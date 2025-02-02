@@ -20,6 +20,7 @@ class TabManager:
         self.previous_tab_index = 0
         
         self.current_sub_tab_index = [0] * len(self.tabs)
+        self.previous_sub_tab_index = [0] * len(self.tabs)
 
         
         self.tab_x_offset = []
@@ -172,6 +173,22 @@ class TabManager:
         new_index = current_sub_index + (1 if direction else -1)
         new_index = max(0, min(new_index, len(subtabs) - 1))
         self.current_sub_tab_index[current_main_index] = new_index
+        
+        if new_index != current_sub_index:
+            match self.current_tab_index:
+                case 0: # STAT
+                    self.stat_tab.change_sub_tab(new_index)
+                case 1: # INV
+                    pass
+                case 2: # DATA
+                    pass
+                case 3: # MAP
+                    pass
+                case 4: # RADIO
+                    pass
+                case _:
+                    pass
+                
     
 
     def scroll_tab(self, direction):

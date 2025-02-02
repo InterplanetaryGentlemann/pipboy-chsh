@@ -49,10 +49,6 @@ class Tab:
             (0, settings.SCREEN_HEIGHT - settings.BOTTOM_BAR_HEIGHT)
         )
         
-    
-    def switch_sub_tabs(self, direction, tabs):
-        
-        pass
         
         
 

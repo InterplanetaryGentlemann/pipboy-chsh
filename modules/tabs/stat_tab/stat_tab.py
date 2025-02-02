@@ -2,13 +2,15 @@ import pygame
 from threading import Thread
 import settings
 import os
+from .status_tab import StatusTab
 
 class StatTab:
     def __init__(self, screen, tab_instance, draw_space):
         self.screen = screen
         self.tab_instance = tab_instance
         self.draw_space = draw_space
-
+        self.current_sub_tab = 0
+        
         
         self.dynamic_footer_text = [
             ("HP", settings.HP_CURRENT, settings.HP_MAX),
@@ -19,6 +21,8 @@ class StatTab:
         
         self.footer_font = tab_instance.footer_font
         self.tab_instance.init_footer(self, (settings.SCREEN_WIDTH // 4, settings.SCREEN_WIDTH // 2), self.init_footer_text())
+        
+        self.status_tab = StatusTab(self.screen, self.draw_space)
 
     
     def init_footer_text(self): 
@@ -44,8 +48,20 @@ class StatTab:
         
         return footer_surface
     
-
+    
+    def change_sub_tab(self, sub_tab):
+        self.current_sub_tab = sub_tab
+        
 
     def render(self):
         self.tab_instance.render_footer(self)
-        pass
+        match self.current_sub_tab:
+            case 0: # Status
+                self.status_tab.render()
+            case 1: # Special
+                pass
+            case 2: # Perks
+                pass
+            case _:
+                pass
+            
