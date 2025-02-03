@@ -12,7 +12,7 @@ from .playlist_manager import PlaylistManager
 from .visualizer import Visualizer
 
 class RadioTab:
-    def __init__(self, screen, tab_instance, draw_space):
+    def __init__(self, screen, tab_instance, draw_space: tuple):
         self.screen = screen
         self.tab_instance = tab_instance
         self.draw_space = draw_space
@@ -28,7 +28,7 @@ class RadioTab:
         )
         size = settings.RADIO_STATION_SELECTION_DOT_SIZE
         self.selected_station_dot = pygame.Surface((size, size), pygame.SRCALPHA).convert_alpha()
-        self.selected_station_dot.fill(settings.PIP_BOY_GREEN)
+        self.selected_station_dot.fill(settings.PIP_BOY_LIGHT)
         self.selected_station_dot_darker = pygame.Surface((size, size), pygame.SRCALPHA).convert_alpha()
         self.selected_station_dot_darker.fill(settings.PIP_BOY_DARKER)
         self.radio_station_surface = None
@@ -52,7 +52,7 @@ class RadioTab:
         Thread(target=self.update_radio_music, daemon=True).start()
 
     def _render_text(self, text: str):
-        return self.main_font.render(text, True, settings.PIP_BOY_GREEN)
+        return self.main_font.render(text, True, settings.PIP_BOY_LIGHT)
 
     def load_radio_stations(self):
         self.loader.load_radio_stations()
@@ -185,7 +185,7 @@ class RadioTab:
                     pygame.mixer.music.stop()
                 self.current_song = None
 
-            wait_time = 500 if self.shared_state.active_station_index is not None else 1000
+            wait_time = 300 if self.shared_state.active_station_index is not None else 1000
             pygame.time.wait(wait_time)
 
     def handle_threads(self, tab_selected: bool):
@@ -204,7 +204,7 @@ class RadioTab:
         ).convert_alpha()
 
         view_surface.blit(self.radio_station_surface, (0, 0))
-        pygame.draw.rect(view_surface, settings.PIP_BOY_GREEN, self.selected_station_rect)
+        pygame.draw.rect(view_surface, settings.PIP_BOY_LIGHT, self.selected_station_rect)
         view_surface.blit(self.selected_station_text,
                           (settings.RADIO_STATION_TEXT_MARGIN, self.selected_station_rect.y))
 

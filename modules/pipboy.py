@@ -4,8 +4,6 @@ import threading
 import settings
 import overlays
 from tab_manager import TabManager
-from input_manager import InputManager
-
 
 
 class PipBoy:
@@ -37,7 +35,7 @@ class PipBoy:
 
 
 
-    def play_hum(self, sound, volume, loops):
+    def play_hum(self, sound: str, volume: float, loops: int):
         pygame.mixer.music.load(sound)
         pygame.mixer.music.set_volume(volume)
         pygame.mixer.music.play(loops)
@@ -58,14 +56,15 @@ class PipBoy:
         # Bloom effect implementation
         if settings.BLOOM_EFFECT:
             green_tint = pygame.Surface((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
-            green_tint.fill((50, 255, 50))
+            green_tint.fill(settings.PIP_BOY_LIGHT)
             green_tint.set_alpha(10)
             
             # Blend the blurred image with additive blending
             self.screen.blit(green_tint, (0, 0))
         
         # Render CRT overlay
-        self.overlay_instance.render()
+        if settings.SHOW_CRT:
+            self.overlay_instance.render()
         
         pygame.display.flip()
 
@@ -85,9 +84,7 @@ class PipBoy:
                 case "main":
                     if not self.hum_started:
                         if settings.SOUND_ON:
-                            self.play_hum(settings.BACKGROUND_HUM, settings.VOLUME / 10, -1) 
-                    # self.tab_manager.update_tabs()       
-                    
+                            self.play_hum(settings.BACKGROUND_HUM, settings.VOLUME / 10, -1)                     
                 case _:
                     pass
 

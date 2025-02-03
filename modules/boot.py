@@ -138,7 +138,7 @@ class BootText(BaseBootSequence):
 
         # Render each line of text into the surface
         for i, line in enumerate(self.boot_text_lines):
-            line_surface = self.font.render(line, True, settings.PIP_BOY_GREEN)
+            line_surface = self.font.render(line, True, settings.PIP_BOY_LIGHT)
             self.full_text_surface.blit(line_surface, (0, i * self.font_height))
             
 
@@ -178,7 +178,7 @@ class BootCopyright(BaseBootSequence):
         self.copyright_text_rendered = []
         self.states = iter(["cursor_initial", "lines", "cursor_bottom", "scroll"])
         self.current_state = next(self.states)
-        self.cursor_surface = self.font.render("▮", True, settings.PIP_BOY_GREEN)
+        self.cursor_surface = self.font.render("▮", True, settings.PIP_BOY_LIGHT)
         self.cursor_position = [0, 0]
         self.cur_cursor_position = 0
         self.current_line = 0
@@ -194,7 +194,7 @@ class BootCopyright(BaseBootSequence):
 
     def render(self): 
         for line in range(len(self.copyright_text_rendered)):
-            self.text_surface = self.font.render(self.copyright_text_rendered[line], True, settings.PIP_BOY_GREEN)
+            self.text_surface = self.font.render(self.copyright_text_rendered[line], True, settings.PIP_BOY_LIGHT)
             self.screen.blit(self.text_surface, (0, (line * self.font_height) + self.text_scroll_y))
         if self.cursor_blink_state and "cursor" in self.current_state:
             self.screen.blit(self.cursor_surface, (self.cursor_position))
@@ -286,7 +286,7 @@ class BootThumbs(BaseBootSequence):
             for filename in os.listdir(settings.BOOT_THUMBS) if filename.endswith(".png")
         ]
         self.image_center = self.images[0].get_rect().center
-        self.init_surface = self.font.render("INITIATING...", True, settings.PIP_BOY_GREEN)
+        self.init_surface = self.font.render("INITIATING...", True, settings.PIP_BOY_LIGHT)
         self.init_surface_center = self.init_surface.get_rect().center
         self.screen_center = self.screen.get_rect().center
         self.blink = 255

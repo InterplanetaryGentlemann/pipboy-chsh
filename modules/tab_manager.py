@@ -13,11 +13,11 @@ from tab import Tab
 class TabManager:
     def __init__(self, screen):
         self.screen = screen
-        self.main_tab_font = pygame.font.Font(settings.MAIN_FONT_PATH, 15)
+        self.main_tab_font = pygame.font.Font(settings.MAIN_FONT_PATH, 14)
         self.tab_font_height = self.main_tab_font.get_height()
         self.tabs = settings.TABS
         self.current_tab_index = 0
-        self.previous_tab_index = 0
+        self.previous_tab_index = None
         
         self.current_sub_tab_index = [0] * len(self.tabs)
         self.previous_sub_tab_index = [0] * len(self.tabs)
@@ -31,7 +31,7 @@ class TabManager:
         self.tab_text_surface = pygame.Surface((settings.SCREEN_WIDTH, self.tab_font_height))
         self.init_tab_text()
         
-        self.draw_space = ((settings.TAB_SCREEN_EDGE_LENGTH + self.tab_font_height + settings.TAB_BOTTOM_MARGIN), settings.BOTTOM_BAR_HEIGHT + settings.BOTTOM_BAR_MARGIN)
+        self.draw_space = ((settings.TAB_SCREEN_EDGE_LENGTH + self.tab_font_height * 2 + settings.TAB_BOTTOM_MARGIN), settings.BOTTOM_BAR_HEIGHT + settings.BOTTOM_BAR_MARGIN)
         
         self.tab_base = Tab(self.screen)
         self.radio_tab = RadioTab(self.screen, self.tab_base, self.draw_space)
@@ -41,11 +41,11 @@ class TabManager:
         self.subtab_total_widths = {}  # Pre-calculated total width for each tab's subtabs
         self.subtab_offsets = {}  # Pre-calculated positioning data
         self.init_subtab_data()
-        
-        
+        self.handle_tab_threads()
 
         
-    def play_sfx(self, sound_file, volume=settings.VOLUME):
+
+    def play_sfx(self, sound_file: str, volume=settings.VOLUME):
         if settings.SOUND_ON:
             sound = pygame.mixer.Sound(sound_file)
             sound.set_volume(volume)
@@ -65,7 +65,7 @@ class TabManager:
             
             for subtab in subtabs:
                 # Pre-render both color states
-                active_surf = self.main_tab_font.render(subtab, True, settings.PIP_BOY_GREEN)
+                active_surf = self.main_tab_font.render(subtab, True, settings.PIP_BOY_LIGHT)
                 inactive_surf = self.main_tab_font.render(subtab, True, settings.PIP_BOY_DARKER)
                 width = active_surf.get_width()
                 
@@ -97,7 +97,7 @@ class TabManager:
         self.tab_x_offset.append(settings.TAB_MARGIN + tab_spacing)
         
         for i, tab in enumerate(self.tabs):
-            text_surface = self.main_tab_font.render(tab, True, settings.PIP_BOY_GREEN)
+            text_surface = self.main_tab_font.render(tab, True, settings.PIP_BOY_LIGHT)
             self.tab_text_surface.blit(text_surface, (self.tab_x_offset[i], settings.TAB_VERTICAL_OFFSET))
             self.tab_x_offset.append((self.main_tab_font.size(tab)[0] + tab_spacing) + self.tab_x_offset[i])
 
@@ -122,7 +122,7 @@ class TabManager:
     def handle_tab_threads(self):
         match self.current_tab_index:
             case 0: # STAT
-                pass
+                Thread(target=self.stat_tab.handle_threads, args=(True,)).start()
             case 1: # INV
                 pass
             case 2: # DATA
@@ -133,7 +133,7 @@ class TabManager:
                 Thread(target=self.radio_tab.handle_threads, args=(True,)).start()
         match self.previous_tab_index:
             case 0: # STAT
-                pass
+                Thread(target=self.stat_tab.handle_threads, args=(False,)).start()
             case 1: # INV
                 pass
             case 2: # DATA
@@ -145,7 +145,7 @@ class TabManager:
             case _:
                 pass
 
-    def switch_tab(self, direction):
+    def switch_tab(self, direction: bool):
 
         with self.switch_lock:
             # Switch tab index
@@ -162,7 +162,7 @@ class TabManager:
         self.switch_tab_sound()
 
 
-    def switch_sub_tab(self, direction):
+    def switch_sub_tab(self, direction: bool):
         current_main_index = self.current_tab_index
         current_sub_index = self.current_sub_tab_index[current_main_index]
         subtabs = settings.SUBTABS.get(self.tabs[current_main_index], [])
@@ -191,7 +191,7 @@ class TabManager:
                 
     
 
-    def scroll_tab(self, direction):
+    def scroll_tab(self, direction: bool):
         match self.current_tab_index:
             case 0: # STAT
                 pass
@@ -228,7 +228,7 @@ class TabManager:
         self.screen.blit(self.tab_text_surface, (0, 0))
         
         # Draw the line below the tabs
-        pygame.draw.line(self.screen, settings.PIP_BOY_GREEN, (0, self.tab_font_height), (settings.SCREEN_WIDTH, self.tab_font_height), 1)
+        pygame.draw.line(self.screen, settings.PIP_BOY_LIGHT, (0, self.tab_font_height), (settings.SCREEN_WIDTH, self.tab_font_height), 1)
         
         # Block line below the selected tab
         pygame.draw.line(
@@ -241,13 +241,13 @@ class TabManager:
         # Draw vertical lines next to the 2 sides of the selected tab
         pygame.draw.line(
             self.screen, 
-            settings.PIP_BOY_GREEN, 
+            settings.PIP_BOY_LIGHT, 
             (self.tab_x_offset[self.current_tab_index] - settings.TAB_HORIZONTAL_LINE_OFFSET, self.tab_font_height), 
             (self.tab_x_offset[self.current_tab_index] - settings.TAB_HORIZONTAL_LINE_OFFSET, self.tab_font_height - settings.TAB_VERTICAL_LINE_OFFSET), 
             1)
         pygame.draw.line(
             self.screen, 
-            settings.PIP_BOY_GREEN, 
+            settings.PIP_BOY_LIGHT, 
             (self.main_tab_font.size(self.tabs[self.current_tab_index])[0] + self.tab_x_offset[self.current_tab_index] + (settings.TAB_HORIZONTAL_LENGTH), self.tab_font_height), 
             (self.main_tab_font.size(self.tabs[self.current_tab_index])[0] + self.tab_x_offset[self.current_tab_index] + (settings.TAB_HORIZONTAL_LENGTH), self.tab_font_height - settings.TAB_VERTICAL_LINE_OFFSET),
             1)
@@ -255,20 +255,20 @@ class TabManager:
         # Draw small horizontal lines next to the 2 vertical lines
         pygame.draw.line(
             self.screen,
-            settings.PIP_BOY_GREEN,
+            settings.PIP_BOY_LIGHT,
             (self.tab_x_offset[self.current_tab_index] - settings.TAB_HORIZONTAL_LINE_OFFSET, self.tab_font_height - settings.TAB_VERTICAL_LINE_OFFSET),
             (self.tab_x_offset[self.current_tab_index] - settings.TAB_HORIZONTAL_LINE_OFFSET + settings.TAB_SCREEN_EDGE_LENGTH, self.tab_font_height - settings.TAB_VERTICAL_LINE_OFFSET),
             1)
         pygame.draw.line(
             self.screen,
-            settings.PIP_BOY_GREEN,
+            settings.PIP_BOY_LIGHT,
             (self.main_tab_font.size(self.tabs[self.current_tab_index])[0] + self.tab_x_offset[self.current_tab_index] + (settings.TAB_HORIZONTAL_LENGTH), self.tab_font_height - settings.TAB_VERTICAL_LINE_OFFSET),
             (self.main_tab_font.size(self.tabs[self.current_tab_index])[0] + self.tab_x_offset[self.current_tab_index] + (settings.TAB_HORIZONTAL_LENGTH) - settings.TAB_SCREEN_EDGE_LENGTH, self.tab_font_height - settings.TAB_VERTICAL_LINE_OFFSET),
             1)
         
         # Draw vertical lines at screen edges
-        pygame.draw.line(self.screen, settings.PIP_BOY_GREEN, (0, settings.TAB_SCREEN_EDGE_LENGTH + self.tab_font_height), (0, self.tab_font_height), 1)
-        pygame.draw.line(self.screen, settings.PIP_BOY_GREEN, (settings.SCREEN_WIDTH - 1,settings.TAB_SCREEN_EDGE_LENGTH + self.tab_font_height), (settings.SCREEN_WIDTH - 1, self.tab_font_height ), 1)
+        pygame.draw.line(self.screen, settings.PIP_BOY_LIGHT, (0, settings.TAB_SCREEN_EDGE_LENGTH + self.tab_font_height), (0, self.tab_font_height), 1)
+        pygame.draw.line(self.screen, settings.PIP_BOY_LIGHT, (settings.SCREEN_WIDTH - 1,settings.TAB_SCREEN_EDGE_LENGTH + self.tab_font_height), (settings.SCREEN_WIDTH - 1, self.tab_font_height ), 1)
         
 
     def render_sub_tabs(self):
@@ -314,23 +314,7 @@ class TabManager:
                 self.radio_tab.render()
             case _:
                 pass
-            
-
-    # def update_tabs(self):
-    #     match self.current_tab_index:
-    #         case 0: # STAT
-    #             pass
-    #         case 1: # INV
-    #             pass
-    #         case 2: # DATA
-    #             pass
-    #         case 3: # MAP
-    #             pass
-    #         case 4: # RADIO
-    #             self.radio_tab.update()
-    #         case _:
-    #             pass
-                            
+                           
 
 
     def render(self):

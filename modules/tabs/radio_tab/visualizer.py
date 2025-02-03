@@ -44,7 +44,8 @@ class Visualizer:
         ).convert_alpha()
         
         self.grid_surface = self._prepare_grid()
-
+        
+        self.change_visualizer_wave(64)
 
     def _prepare_grid(self):
         grid_surface = pygame.Surface(
@@ -53,64 +54,73 @@ class Visualizer:
         ).convert_alpha()
         grid_surface.fill((0, 0, 0, 0))
         
-        
         # Render x-axis
         pygame.draw.line(
-            grid_surface, settings.PIP_BOY_GREEN, (self.vis_x, self.vis_y + self.visualizer_size), (self.vis_x + self.visualizer_size, self.vis_y + self.visualizer_size), 1
+            grid_surface, settings.PIP_BOY_LIGHT, (self.vis_x, self.vis_y + self.visualizer_size), (self.vis_x + self.visualizer_size, self.vis_y + self.visualizer_size), 1
         )
         
         # Render y-axis
         pygame.draw.line(
-            grid_surface, settings.PIP_BOY_GREEN, (self.vis_x + self.visualizer_size, self.vis_y), (self.vis_x + self.visualizer_size, self.vis_y + self.visualizer_size), 1
+            grid_surface, settings.PIP_BOY_LIGHT, (self.vis_x + self.visualizer_size, self.vis_y), (self.vis_x + self.visualizer_size, self.vis_y + self.visualizer_size), 1
         )
         
-        
         # Render small lines along big lines
-        
         for i in range(1, settings.RADIO_WAVE_VISUALIZER_GRID_LINES):
             line_size = 5 if i % 4 == 0 else 3
             x = self.vis_x + i * (self.visualizer_size // settings.RADIO_WAVE_VISUALIZER_GRID_LINES)
-            pygame.draw.line(grid_surface, settings.PIP_BOY_GREEN, (x, self.vis_y + self.visualizer_size), (x, self.vis_y - line_size + self.visualizer_size), 1)
+            pygame.draw.line(grid_surface, settings.PIP_BOY_LIGHT, (x, self.vis_y + self.visualizer_size), (x, self.vis_y - line_size + self.visualizer_size), 1)
             y = self.vis_y + i * (self.visualizer_size // settings.RADIO_WAVE_VISUALIZER_GRID_LINES)
-            pygame.draw.line(grid_surface, settings.PIP_BOY_GREEN, (self.vis_x + self.visualizer_size, y), (self.vis_x - line_size + self.visualizer_size, y), 1)
+            pygame.draw.line(grid_surface, settings.PIP_BOY_LIGHT, (self.vis_x + self.visualizer_size, y), (self.vis_x - line_size + self.visualizer_size, y), 1)
             
         return grid_surface
 
-    def _prepare_wave_pattern(self, pattern_name):
+    def _prepare_wave_pattern(self, pattern_name: str):
         pattern = self.wave_patterns[pattern_name]
         random_values = np.random.uniform(pattern[:, 0], pattern[:, 1], size=(len(self.waves), 2)).astype(np.float32)
         self.waves[:, 3:5] = random_values
 
-    def change_visualizer_wave(self):
-        station_playing = self.shared_state.station_playing
-        active_station_index = self.shared_state.active_station_index
+    def change_visualizer_wave(self, batch_size):
+        new_samples = []
+        for _ in range(batch_size):
+            # Update wave parameters towards targets
+            self.waves[:, 0:2] += (self.waves[:, 3:5] - self.waves[:, 0:2]) * settings.RADIO_WAVE_SMOOTHING_FACTOR
+            # Update phase
+            self.waves[:, 2] = (self.waves[:, 2] + self.waves[:, 0] * 0.08) % (2 * np.pi)
+            # Compute current wave value
+            total_wave = np.sum(np.sin(self.waves[:, 2]) * self.waves[:, 1]) / len(self.waves)
 
-        self.waves[:, 0:2] += (self.waves[:, 3:5] - self.waves[:, 0:2]) * settings.RADIO_WAVE_SMOOTHING_FACTOR
-        self.waves[:, 2] = (self.waves[:, 2] + self.waves[:, 0] * 0.08) % (2 * np.pi)
-        total_wave = np.sum(np.sin(self.waves[:, 2]) * self.waves[:, 1]) / len(self.waves)
+            # State checks and pattern changes
+            station_playing = self.shared_state.station_playing
+            active_station_index = self.shared_state.active_station_index
 
-        if not station_playing and abs(total_wave) < 0.05:
-            self._prepare_wave_pattern('idle')
-            self.change_station_wave_counter = 0
-        elif active_station_index != self.shared_state.previous_station_index:
-            self._prepare_wave_pattern('changing')
-            self.change_station_wave_counter = random.randint(30, 90)
-            self.shared_state.previous_station_index = active_station_index
-        elif self.change_station_wave_counter > 0:
-            self.change_station_wave_counter -= 1
-            if self.change_station_wave_counter == 1:
+            if not station_playing and abs(total_wave) < 0.05:
+                self._prepare_wave_pattern('idle')
+                self.change_station_wave_counter = 0
+            elif active_station_index != self.shared_state.previous_station_index:
+                self._prepare_wave_pattern('changing')
+                self.change_station_wave_counter = random.randint(30, 90)
+                self.shared_state.previous_station_index = active_station_index
+            elif self.change_station_wave_counter > 0:
+                self.change_station_wave_counter -= 1
+                if self.change_station_wave_counter == 1:
+                    self._prepare_wave_pattern('playing')
+            elif abs(total_wave) < 0.05 and random.random() < 0.1:
                 self._prepare_wave_pattern('playing')
-        elif abs(total_wave) < 0.05 and random.random() < 0.1:
-            self._prepare_wave_pattern('playing')
 
+            new_samples.append(total_wave)
+
+        # Update wave_points with new batch
         with self.wave_point_lock:
-            self.wave_points = np.roll(self.wave_points, -1)
-            self.wave_points[-1] = total_wave
+            # Efficiently shift and update the wave points
+            self.wave_points[:-batch_size] = self.wave_points[batch_size:]
+            self.wave_points[-batch_size:] = new_samples
 
     def update_visualiser(self):
+        batch_size = settings.RADIO_WAVE_BATCH_SIZE
         while self.visualizer_thread_running:
-            self.change_visualizer_wave()
-            pygame.time.wait(settings.SPEED * 8)
+            self.change_visualizer_wave(batch_size)
+            # Adjust wait time to maintain the same sample rate
+            pygame.time.wait(settings.SPEED * 100)
 
     def start(self):
         if not self.visualizer_thread or not self.visualizer_thread.is_alive():
@@ -127,7 +137,6 @@ class Visualizer:
             self.visualizer_thread.join()
             self.visualizer_thread = None
 
-
     def render_waves(self):
         with self.wave_point_lock:
             points = self.wave_points.copy()
@@ -135,9 +144,8 @@ class Visualizer:
         x_coords = self.vis_x + self.x_positions
         y_coords = self.midpoint_y + (points * (self.visualizer_size // 2)).astype(int)
         points_array = np.column_stack((x_coords, y_coords))
-        pygame.draw.lines(self.wave_surface, settings.PIP_BOY_GREEN, False, points_array, 1)
+        pygame.draw.lines(self.wave_surface, settings.PIP_BOY_LIGHT, False, points_array, 1)
         self.screen.blit(self.wave_surface, (0, 0))
-
 
     def render(self):
         self.screen.blit(self.grid_surface, (0, 0))

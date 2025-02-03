@@ -304,7 +304,7 @@ class Visualizer:
         x_coords = self.vis_x + self.x_positions
         y_coords = self.midpoint_y + (points * (self.visualizer_size // 2)).astype(np.int32)
         points_array = np.column_stack((x_coords, y_coords))
-        pygame.draw.lines(self.wave_surface, settings.PIP_BOY_GREEN, False, points_array, 1)
+        pygame.draw.lines(self.wave_surface, settings.PIP_BOY_LIGHT, False, points_array, 1)
         self.screen.blit(self.wave_surface, (0, 0))
 
 
@@ -328,7 +328,7 @@ class RadioTab:
         )
         size = settings.RADIO_STATION_SELECTION_DOT_SIZE
         self.selected_station_dot = pygame.Surface((size, size), pygame.SRCALPHA).convert_alpha()
-        self.selected_station_dot.fill(settings.PIP_BOY_GREEN)
+        self.selected_station_dot.fill(settings.PIP_BOY_LIGHT)
         self.selected_station_dot_darker = pygame.Surface((size, size), pygame.SRCALPHA).convert_alpha()
         self.selected_station_dot_darker.fill(settings.PIP_BOY_DARKER)
         self.radio_station_surface = None
@@ -359,7 +359,7 @@ class RadioTab:
         Thread(target=self.update_radio_music, daemon=True).start()
 
     def _render_text(self, text: str) -> pygame.Surface:
-        return self.main_font.render(text, True, settings.PIP_BOY_GREEN)
+        return self.main_font.render(text, True, settings.PIP_BOY_LIGHT)
 
     def load_radio_stations(self):
         self.loader.load_radio_stations()
@@ -512,7 +512,7 @@ class RadioTab:
         ).convert_alpha()
 
         view_surface.blit(self.radio_station_surface, (0, 0))
-        pygame.draw.rect(view_surface, settings.PIP_BOY_GREEN, self.selected_station_rect)
+        pygame.draw.rect(view_surface, settings.PIP_BOY_LIGHT, self.selected_station_rect)
         view_surface.blit(self.selected_station_text,
                           (settings.RADIO_STATION_TEXT_MARGIN, self.selected_station_rect.y))
 
