@@ -7,7 +7,7 @@ from threading import Thread, Lock
 from tabs.radio_tab.radio_tab import RadioTab
 from tabs.stat_tab.stat_tab import StatTab
 from tabs.inv_tab.inv_tab import InvTab
-from tab import Tab
+from tab import Tab, ThreadHandler
 
 
 
@@ -40,12 +40,21 @@ class TabManager:
         self.stat_tab = StatTab(self.screen, self.tab_base, self.draw_space)
         self.inv_tab = InvTab(self.screen, self.tab_base, self.draw_space)
         
+        tab_map = {
+            0: self.stat_tab,
+            1: self.inv_tab,
+            # Skipping indices 2 and 3 if they don’t need handling
+            4: self.radio_tab,
+        }
+
+        
         self.subtab_surfaces = {}  # Pre-rendered text surfaces for all states
         self.subtab_total_widths = {}  # Pre-calculated total width for each tab's subtabs
         self.subtab_offsets = {}  # Pre-calculated positioning data
         self.init_subtab_data()
-        self.handle_tab_threads()
-
+        
+        self.tab_thread_handler = ThreadHandler(tab_map, self.current_tab_index)
+                
         
 
     def play_sfx(self, sound_file: str, volume=settings.VOLUME):
@@ -55,8 +64,26 @@ class TabManager:
             sound.play(0)
             
     def switch_tab_sound(self):
-        sound = random.choice(os.listdir(settings.TAB_SWITCH_SOUND))      
-        self.play_sfx(os.path.join(settings.TAB_SWITCH_SOUND, sound), settings.VOLUME / 3)                
+        if settings.SOUND_ON:
+            
+            if self.current_tab_index > self.previous_tab_index:
+                self.play_sfx(os.path.join(settings.ROTARY_VERTICAL_1), settings.VOLUME / 5)
+
+            else:
+                self.play_sfx(os.path.join(settings.ROTARY_VERTICAL_2), settings.VOLUME / 5)
+            if random.randrange(100) < settings.SWITCH_SOUND_CHANCE:
+                sound = random.choice(os.listdir(settings.BUZZ_SOUND_BASE_FOLDER))      
+                self.play_sfx(os.path.join(settings.BUZZ_SOUND_BASE_FOLDER, sound), settings.VOLUME / 3)       
+                
+    def switch_sub_tab_sound(self):
+        if settings.SOUND_ON:
+            if self.current_sub_tab_index > self.previous_sub_tab_index:
+                self.play_sfx(os.path.join(settings.ROTARY_HORIZONTAL_1), settings.VOLUME / 5)
+
+            else:
+                self.play_sfx(os.path.join(settings.ROTARY_HORIZONTAL_2), settings.VOLUME / 5)
+
+            
 
     def init_subtab_data(self):
         """Pre-render all possible subtab states and calculate positioning data"""
@@ -122,31 +149,6 @@ class TabManager:
             self.screen.blit(blur, (0, 0), special_flags=pygame.BLEND_ADD)        
   
 
-    def handle_tab_threads(self):
-        match self.current_tab_index:
-            case 0: # STAT
-                Thread(target=self.stat_tab.handle_threads, args=(True,)).start()
-            case 1: # INV
-                Thread(target=self.inv_tab.handle_threads, args=(True,)).start()
-            case 2: # DATA
-                pass
-            case 3: # MAP
-                pass
-            case 4: # RADIO
-                Thread(target=self.radio_tab.handle_threads, args=(True,)).start()
-        match self.previous_tab_index:
-            case 0: # STAT
-                Thread(target=self.stat_tab.handle_threads, args=(False,)).start()
-            case 1: # INV
-                Thread(target=self.inv_tab.handle_threads, args=(False,)).start()
-            case 2: # DATA
-                pass
-            case 3: # MAP
-                pass
-            case 4: # RADIO
-                Thread(target=self.radio_tab.handle_threads, args=(False,)).start()
-            case _:
-                pass
 
     def switch_tab(self, direction: bool):
 
@@ -161,7 +163,7 @@ class TabManager:
         else:
             self.render_blur = True
         
-        self.handle_tab_threads()
+        self.tab_thread_handler.update_tab_index(self.current_tab_index)
         self.switch_tab_sound()
 
 
@@ -177,7 +179,9 @@ class TabManager:
         new_index = max(0, min(new_index, len(subtabs) - 1))
         self.current_sub_tab_index[current_main_index] = new_index
         
+        
         if new_index != current_sub_index:
+            self.switch_sub_tab_sound()
             match self.current_tab_index:
                 case 0: # STAT
                     self.stat_tab.change_sub_tab(new_index)
@@ -205,11 +209,12 @@ class TabManager:
             case 3: # MAP
                 pass
             case 4: # RADIO
-                self.radio_tab.change_stations(direction)
+                self.radio_tab.scroll(direction)
             case _:
                 pass
 
     def select_item(self):
+        
         match self.current_tab_index:
             case 0: # STAT
                 pass

@@ -244,19 +244,17 @@ class StatusTab:
             
             self.vaultboy_legs_index = (self.vaultboy_legs_index + 1) % len(self.scaled_legs)
             pygame.time.wait(settings.SPEED * 150)
-
-    def start(self):
-        """Start the vault boy animation thread"""
-        if not self.vaultboy_thread or not self.vaultboy_thread.is_alive():
+    
+    def handle_threads(self, tab_selected: bool):
+        """ Handle the threads"""
+        if tab_selected and not self.vaultboy_thread_running:
             self.vaultboy_thread_running = True
             self.vaultboy_thread = Thread(target=self.update_vaultboy, daemon=True)
             self.vaultboy_thread.start()
-
-    def stop(self):
-        """Stop the vault boy animation thread"""
-        if self.vaultboy_thread and self.vaultboy_thread.is_alive():
+        elif not tab_selected and self.vaultboy_thread_running:
             self.vaultboy_thread_running = False
             self.vaultboy_thread.join()
+            
 
     def render(self):
         """Render all components to the screen"""

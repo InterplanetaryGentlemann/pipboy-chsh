@@ -61,6 +61,7 @@ class GenericList:
         self._init_selection_rect()
            
         self.selected_index = 0
+        self.previously_selected_index = 0
         self.items = items
         
         if len(self.items) > 0:
@@ -132,10 +133,12 @@ class GenericList:
 
     def change_selection(self, direction: bool):
         new_index = self.selected_index + (-1 if direction else 1)
+
+        prev_index = self.selected_index
         if 0 <= new_index < len(self.items):
             self.selected_index = new_index
             self.update_list()    
-        return self.selected_index
+        return prev_index
 
     def render(self, screen, active_index=None, was_selected=False):
         if not self.list_surface or not self.selected_text:
@@ -215,7 +218,6 @@ class ItemGrid:
         current_y = max(current_y, self.draw_space.top)  # Clamp to top boundary
 
         label_x = self.draw_space.left + self.padding
-        value_x = self.draw_space.right - self.padding
 
         for entry in entries:
             if current_y >= self.draw_space.bottom:
@@ -226,6 +228,7 @@ class ItemGrid:
             label_y = current_y + self.top_margin
             icon_x = label_x
             icon_front_x = label_x
+            value_x = self.draw_space.right - self.padding
             
             if entry.get("icon_front") and "icon" in entry:
                 icon_surface = entry["icon"]
@@ -237,7 +240,7 @@ class ItemGrid:
             label_pos = (icon_front_x, label_y)
             entry_lines.append(("label", label_surface, label_pos))
 
-            value_y = label_y            
+            value_y = label_y        
 
 
             if "lines" in entry:
@@ -263,11 +266,18 @@ class ItemGrid:
                         entry_lines.append(("component", component, (current_x, y_pos)))
                         icon_x -= component.get_width()
                         current_x += component.get_width() + self.padding
+                        
 
-            elif "value" in entry:
+                
+            if "value" in entry:
                 text_surface = self._get_rendered_text(str(entry["value"]), settings.PIP_BOY_LIGHT)
                 text_width = text_surface.get_width()
                 entry_lines.append(("value", text_surface, (value_x - text_width, value_y)))
+                
+            if not entry.get("icon_front") and "icon" in entry:
+                icon_surface = entry["icon"]
+                icon_x = value_x - icon_surface.get_width() - text_width - (self.padding * 2)
+                entry_lines.append(("icon", icon_surface, (icon_x, value_y + 1)))
 
             # Entry height calculation
             additional_lines = max(0, len(entry.get("lines", [])) - 1)

@@ -8,17 +8,32 @@ import os
             
             
 class InvBase:
-    def __init__(self, screen, tab_instance, draw_space: pygame.Rect, category: str):
+    def __init__(self, screen, tab_instance, draw_space: pygame.Rect, category: str, enable_turntable: bool = True, enable_dot: bool = False):
         self.screen = screen
         self.tab_instance = tab_instance
         self.draw_space = draw_space
+        self.enable_turntable = enable_turntable
         
+        self.inv_font = pygame.font.Font(settings.ROBOTO_BOLD_PATH, 10)
+        self.footer_font = tab_instance.footer_font               
         inventory = Inventory()
+        self.inv_items = inventory.get_all_items(category)
+        self.weight = sum(item.weight for item in inventory.get_all_items())
+        self._init_icons()
         
+        self.no_items = True if not self.inv_items else False
+        if self.no_items:
+            return
+                
         self.item_selected = False
         self.active_item_index = None
         self.previous_item_index = None
         
+        self.unique_items = inventory.get_unique_items(category)
+        
+        item_names = inventory.get_item_names(category)
+
+           
         self.list_draw_space = pygame.Rect(
             self.draw_space.left,
             self.draw_space.top + 2 * settings.LIST_TOP_MARGIN,
@@ -26,37 +41,28 @@ class InvBase:
             self.draw_space.height - 2 * settings.LIST_TOP_MARGIN
         )
         
-        self.inv_font = pygame.font.Font(settings.ROBOTO_BOLD_PATH, 10)
-        
-        self.footer_font = tab_instance.footer_font               
-         
-        self.inv_items = inventory.get_all_items(category)
-        
-        self.unique_items = inventory.get_unique_items(category)
-        
-        item_names = inventory.get_item_names(category)
-                
-        self.weight = sum(item.weight for item in self.inv_items)
-
-        self._init_icons()
-           
         self.inv_list = GenericList(
             draw_space=self.list_draw_space,
             font=self.inv_font,
             items=item_names,
-            enable_dot=True,
+            enable_dot=enable_dot,
         )
         
+        if self.enable_turntable:
+            self._init_turntable()
+        
+
+    def _init_turntable(self):
         self.turntable_draw_space = pygame.Rect(
             self.list_draw_space.right + settings.TURNTABLE_LEFT_MARGIN,
             self.draw_space.top,
             self.draw_space.width - self.list_draw_space.width,
             self.list_draw_space.height // 2
         )
-
+        
         self.turntable_lock = Lock
         self.item_turntable = None
-        
+
     
     def _init_icons(self):
         self.big_icon_size = settings.BOTTOM_BAR_HEIGHT - (settings.BOTTOM_BAR_HEIGHT // 4)
@@ -73,6 +79,9 @@ class InvBase:
         
 
     def select_item(self):    
+        if self.no_items:
+            return
+        
         if self.inv_list.selected_index == self.active_item_index:
             self.item_selected = not self.item_selected
         else:
@@ -82,10 +91,12 @@ class InvBase:
 
 
     def scroll(self, direction: bool):
-        self.inv_list.change_selection(direction)
-        
-        
-        Thread(target=self.start_item_animation).start() 
+        if self.no_items:
+            return
+        prev_index = self.inv_list.change_selection(direction)
+
+        if self.enable_turntable and self.inv_list.selected_index != prev_index:
+            Thread(target=self.start_item_animation).start() 
         
     
     
@@ -122,7 +133,6 @@ class InvBase:
         
         
 
-
     def start_item_animation(self):
         
         if self.item_turntable:
@@ -148,19 +158,25 @@ class InvBase:
         self.item_turntable.start()
 
 
-
-    def start(self):
-        Thread(target=self.start_item_animation).start() 
-    
-    def stop(self):
-        self.item_turntable.stop()
-        self.item_turntable = None
-        
+    def handle_threads(self, tab_selected: bool):
+        """ Handle the threads"""
+        if self.no_items:
+            return
+        if tab_selected and self.enable_turntable:
+            Thread(target=self.start_item_animation).start()
+        elif not tab_selected and self.enable_turntable and self.item_turntable :
+            self.item_turntable.stop()
+            self.item_turntable = None
+            
+               
         
         
     def render(self):
         self.tab_instance.render_footer(self)
+        if self.no_items:
+            return
         self.inv_list.render(self.screen, self.active_item_index, self.item_selected)
-        if self.item_turntable:
+        if self.enable_turntable and self.item_turntable:
             self.item_turntable.render()
+            
 

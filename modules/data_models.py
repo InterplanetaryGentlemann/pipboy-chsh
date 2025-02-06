@@ -38,6 +38,7 @@ class WeaponItem(ItemBase):
 
 @dataclass
 class ApparelItem(ItemBase):
+    defense: int = 0
     damage_resist: Tuple[DamageType] = ()
     special_bonuses: Dict[str, int] = None
 
@@ -47,11 +48,15 @@ class AidItem(ItemBase):
     ap: int = 0
     rads: int = 0
     addiction_risk: str = "None"
+    special_bonuses: Dict[str, int] = None
 
 @dataclass
 class AmmoItem(ItemBase):
     damage_type: str = ""
 
+@dataclass
+class JunkItem(ItemBase):
+    components: Dict[str, int] = None
 
 @dataclass
 class MiscItem(ItemBase):

@@ -1,4 +1,4 @@
-from data_models import WeaponItem, ApparelItem, AidItem, MiscItem, IconConfig, AmmoItem
+from data_models import WeaponItem, ApparelItem, AidItem, MiscItem, IconConfig, AmmoItem, JunkItem
 from configparser import ConfigParser
 from typing import Tuple, Dict
 
@@ -70,7 +70,7 @@ class ItemLoader:
             for ic in [x.strip() for x in value.split(',')]
         )
     
-    def _parse_special_bonuses(self, value: str) -> Dict[str, int]:
+    def _parse_dicts(self, value: str) -> Dict[str, int]:
         if not value:
             return {}
         return dict(
@@ -105,8 +105,9 @@ class ItemLoader:
             elif item_type == 'Apparel':
                 self.items[section] = ApparelItem(
                     **base_data,
+                    defense=int(data.get('defense', 0)),
                     damage_resist=self._parse_icon_configs(data.get('damage_resist', '')),
-                    special_bonuses=self._parse_special_bonuses(data.get('special_bonuses', ''))
+                    special_bonuses=self._parse_dicts(data.get('special_bonuses', ''))
                 )
             elif item_type == 'Aid':
                 self.items[section] = AidItem(
@@ -114,15 +115,22 @@ class ItemLoader:
                     health=int(data.get('health', 0)),
                     rads=int(data.get('rads', 0)),
                     ap=int(data.get('ap', 0)),
-                    addiction_risk=data.get('addiction_risk', 'None')
+                    addiction_risk=data.get('addiction_risk', 'None'),
+                    special_bonuses=self._parse_dicts(data.get('special_bonuses', ''))
                 )
                 
             elif item_type == 'Ammo':
                 self.items[section] = AmmoItem(
                     **base_data,
                     damage_type=data.get('damage_type', '')
-                )  
+                )
                 
+            elif item_type == 'Junk':
+                self.items[section] = JunkItem(
+                    **base_data,
+                    components=self._parse_dicts(data.get('components', ''))
+                )   
+                             
             elif item_type == 'Misc':
                 self.items[section] = MiscItem(
                     **base_data,

@@ -7,7 +7,7 @@ from ui import ItemGrid
 
 class WeaponsTab(InvBase):
     def __init__(self, screen, tab_instance, draw_space):
-        super().__init__(screen, tab_instance, draw_space, category='Weapon')
+        super().__init__(screen, tab_instance, draw_space, category='Weapon', enable_dot=True)
         self.tab_instance.init_footer(self, (settings.SCREEN_WIDTH // 4, settings.SCREEN_WIDTH // 4), self.init_footer_text())
         
         self.ammo_icon = self.tab_instance.load_svg(self.small_icon_size, settings.AMMO_ICON)

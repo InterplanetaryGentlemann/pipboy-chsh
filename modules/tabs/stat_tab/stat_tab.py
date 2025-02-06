@@ -2,6 +2,7 @@ import pygame
 import settings
 from .status_tab import StatusTab
 from .special_tab import SpecialTab
+from tab import ThreadHandler
 
 class StatTab:
     def __init__(self, screen, tab_instance, draw_space: pygame.Rect):
@@ -24,6 +25,15 @@ class StatTab:
         
         self.status_tab = StatusTab(self.screen, self.tab_instance, self.draw_space)
         self.special_tab = SpecialTab(self.screen, self.tab_instance, self.draw_space)
+        
+        
+        sub_tab_map = {
+            0: self.status_tab,
+            1: self.special_tab
+        }
+        
+        self.sub_tab_thread_handler = ThreadHandler(sub_tab_map, self.current_sub_tab_index)
+        
 
     
     def init_footer_text(self): 
@@ -52,6 +62,7 @@ class StatTab:
     
     def change_sub_tab(self, sub_tab: int):
         self.current_sub_tab_index = sub_tab
+        self.sub_tab_thread_handler.update_tab_index(self.current_sub_tab_index)
 
 
     def scroll(self, direction: bool):
@@ -67,12 +78,9 @@ class StatTab:
 
 
     def handle_threads(self, tab_selected: bool):
-        if tab_selected:
-            self.status_tab.start()
-            self.special_tab.start()
-        else:
-            self.status_tab.stop()
-            self.special_tab.stop()
+        self.sub_tab_thread_handler.update_tab_index(self.current_sub_tab_index)
+    
+
         
 
     def render(self):

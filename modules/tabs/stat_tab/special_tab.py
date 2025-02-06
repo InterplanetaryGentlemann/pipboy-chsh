@@ -54,30 +54,30 @@ class SpecialTab:
             )
             # self.animated_images[special].start()
         
-     
-     
-    def start(self):
-        """Start the animation thread."""
-        self.animated_images[settings.SPECIAL[self.selected_special_index]].start()
     
-    def stop(self):
-        """Stop the animation thread."""
-        self.animated_images[settings.SPECIAL[self.selected_special_index]].stop()    
+    
+    def handle_threads(self, tab_selected: bool):
+        """ Handle the threads"""
+        if tab_selected:
+            self.animated_images[settings.SPECIAL[self.selected_special_index]].start()
+        else:
+            self.animated_images[settings.SPECIAL[self.selected_special_index]].stop()
+            
         
     
     def scroll_special(self, direction: bool):
         """Scroll through specials and restart animation if needed."""
-        new_index = self.special_list.change_selection(direction)
-        if new_index != self.previous_special_index:
+        prev_index = self.special_list.change_selection(direction)
+        selected_index = self.special_list.selected_index
+        if selected_index != prev_index:
             # Stop previous animation to avoid wasted threads
-            self.animated_images[settings.SPECIAL[self.previous_special_index]].stop()
+            self.animated_images[settings.SPECIAL[prev_index]].stop()
 
             # Restart the selected animation
-            self.selected_special_index = new_index
+            self.selected_special_index = selected_index
             self.animated_images[settings.SPECIAL[self.selected_special_index]].reset()
             self.animated_images[settings.SPECIAL[self.selected_special_index]].start()
 
-            self.previous_special_index = new_index
             
     
     def _init_special_text(self):

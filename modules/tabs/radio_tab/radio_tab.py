@@ -61,7 +61,7 @@ class RadioTab:
             settings.VOLUME
         )
 
-    def change_stations(self, direction: bool):
+    def scroll(self, direction: bool):
         self.station_list.change_selection(direction)
 
     def select_station(self):

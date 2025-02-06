@@ -15,7 +15,6 @@ class PipBoy:
         self.clock = clock
         self.states = iter(["boot", "main"])
         self.current_sequence = "main"   
-        self.hum_started = False
         
         self.tab_manager = TabManager(self.screen)
         
@@ -32,14 +31,14 @@ class PipBoy:
             self.overlay_instance = overlays.Overlays(self.screen)
             threading.Thread(target=self.overlay_instance.run, daemon=True).start()
 
+        self.done = False
 
 
 
     def play_hum(self, sound: str, volume: float, loops: int):
-        pygame.mixer.music.load(sound)
-        pygame.mixer.music.set_volume(volume)
-        pygame.mixer.music.play(loops)
-        self.hum_started = True
+        sound = pygame.mixer.Sound(sound)
+        sound.set_volume(volume)
+        sound.play(loops)
 
     
     def render(self):
@@ -74,19 +73,19 @@ class PipBoy:
             self.input_manager.handle_input(self.tab_manager)
             self.input_manager.run()
             
-            
-            match self.current_sequence:
-                case "boot":
-                    self.boot_instance.start()
-                    self.boot_thread.join()
-                    # del self.boot_instance
-                    self.current_sequence = next(self.states)
-                case "main":
-                    if not self.hum_started:
+            if not self.done:
+                match self.current_sequence:
+                    case "boot":
+                        self.boot_instance.start()
+                        self.boot_thread.join()
+                        # del self.boot_instance
+                        self.current_sequence = next(self.states)
+                    case "main":
                         if settings.SOUND_ON:
-                            self.play_hum(settings.BACKGROUND_HUM, settings.VOLUME / 10, -1)                     
-                case _:
-                    pass
+                            self.play_hum(settings.BACKGROUND_HUM, settings.VOLUME / 10, -1)
+                        self.done = True
+                    case _:
+                        pass
 
             pygame.time.wait(settings.SPEED)
 
