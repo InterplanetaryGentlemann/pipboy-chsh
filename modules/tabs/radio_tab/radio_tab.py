@@ -6,39 +6,38 @@ from threading import Thread
 import settings
 import os
 
-from .radio_shared_state import RadioSharedState
 from .radio_station_loader import RadioStationLoader
 from .playlist_manager import PlaylistManager
 from .visualizer import Visualizer
+from ui import GenericList
+
 
 class RadioTab:
-    def __init__(self, screen, tab_instance, draw_space: tuple):
+    def __init__(self, screen, tab_instance, draw_space: pygame.Rect):
         self.screen = screen
         self.tab_instance = tab_instance
         self.draw_space = draw_space
 
         self.tab_instance.init_footer(self)
         self.main_font = pygame.font.Font(settings.ROBOTO_BOLD_PATH, 12)
-        self.font_height = self.main_font.get_height()
-        self.selected_station_rect = pygame.Rect(
-            0,
-            self.draw_space[0],
-            (settings.SCREEN_WIDTH // 2) - (settings.TAB_SIDE_MARGIN * 2),
-            self.font_height
+        
+        
+        list_draw_space = pygame.Rect(
+            self.draw_space.left,
+            self.draw_space.top,
+            self.draw_space.centerx - 2 * settings.TAB_SIDE_MARGIN,
+            self.draw_space.height
         )
-        size = settings.RADIO_STATION_SELECTION_DOT_SIZE
-        self.selected_station_dot = pygame.Surface((size, size), pygame.SRCALPHA).convert_alpha()
-        self.selected_station_dot.fill(settings.PIP_BOY_LIGHT)
-        self.selected_station_dot_darker = pygame.Surface((size, size), pygame.SRCALPHA).convert_alpha()
-        self.selected_station_dot_darker.fill(settings.PIP_BOY_DARKER)
-        self.radio_station_surface = None
-        self.selected_station_text = None
+        
+        self.station_list = GenericList(
+            draw_space=list_draw_space,
+            font=self.main_font,
+            enable_dot=True
+        )
 
-        self.selected_station_index = 0
-
-        self.shared_state = RadioSharedState()
-        self.shared_state.station_playing = False
-        self.shared_state.active_station_index = None
+        self.station_playing = False
+        self.active_station_index = None
+        self.previous_station_index = None
 
         self.current_song = None
         self.radio_music_thread_running = True
@@ -46,40 +45,14 @@ class RadioTab:
         self.loader = RadioStationLoader(settings.RADIO_BASE_FOLDER,
                                          settings.DCR_INTERMISSIONS_BASE_FOLDER)
         self.playlist_manager = PlaylistManager()
-        self.visualizer = Visualizer(self.draw_space, self.screen, self.shared_state)
+        self.visualizer = Visualizer(self.draw_space, self.screen, self)
 
         Thread(target=self.load_radio_stations, daemon=True).start()
         Thread(target=self.update_radio_music, daemon=True).start()
 
-    def _render_text(self, text: str):
-        return self.main_font.render(text, True, settings.PIP_BOY_LIGHT)
-
     def load_radio_stations(self):
         self.loader.load_radio_stations()
-        self._prepare_radio_station_surface()
-        self.update_station_list()
-
-    def _prepare_radio_station_surface(self):
-        if not self.loader.radio_stations:
-            return
-        height = self.font_height * len(self.loader.radio_stations)
-        self.radio_station_surface = pygame.Surface(
-            (settings.SCREEN_WIDTH, height), pygame.SRCALPHA
-        ).convert_alpha()
-        for i, station_name in enumerate(self.loader.radio_stations):
-            text_surface = self._render_text(station_name)
-            self.radio_station_surface.blit(
-                text_surface, (settings.RADIO_STATION_TEXT_MARGIN, i * self.font_height)
-            )
-
-    def update_station_list(self):
-        if not self.loader.radio_stations:
-            return
-        self.selected_station_rect.y = self.selected_station_index * self.font_height
-        selected_station_name = list(self.loader.radio_stations.keys())[self.selected_station_index]
-        self.selected_station_text = self.main_font.render(
-            selected_station_name, True, settings.PIP_BOY_DARKER
-        )
+        self.station_list.set_items(list(self.loader.radio_stations.keys()))
 
     def play_station_switch_sound(self):
         sound = random.choice(os.listdir(settings.RADIO_STATIC_BURSTS_BASE_FOLDER))
@@ -89,35 +62,33 @@ class RadioTab:
         )
 
     def change_stations(self, direction: bool):
-        new_index = self.selected_station_index + (-1 if direction else 1)
-        if 0 <= new_index < len(self.loader.radio_stations):
-            self.selected_station_index = new_index
-            self.update_station_list()
+        self.station_list.change_selection(direction)
 
     def select_station(self):
-        if self.selected_station_index == self.shared_state.active_station_index:
-            self.shared_state.station_playing = not self.shared_state.station_playing
+        if self.station_list.selected_index == self.active_station_index:
+            self.station_playing = not self.station_playing
         else:
-            self.shared_state.station_playing = True
+            self.station_playing = True
 
-        if not self.shared_state.station_playing:
+        if not self.station_playing:
             self.tab_instance.play_sfx(settings.RADIO_TURN_OFF_SOUND)
         else:
             self.play_station_switch_sound()
 
-        self.shared_state.active_station_index = self.selected_station_index
+        self.active_station_index = self.station_list.selected_index
+
 
     def update_radio_music(self):
         while self.radio_music_thread_running:
-            if (self.shared_state.active_station_index is not None and 
-                self.shared_state.station_playing and 
+            if (self.active_station_index is not None and 
+                self.station_playing and 
                 self.loader.radio_stations):
                 station_names = list(self.loader.radio_stations.keys())
-                if self.shared_state.active_station_index >= len(station_names):
+                if self.active_station_index >= len(station_names):
                     pygame.time.wait(1000)
                     continue
 
-                station_name = station_names[self.shared_state.active_station_index]
+                station_name = station_names[self.active_station_index]
                 station = self.loader.radio_stations[station_name]
 
                 if station_name not in self.playlist_manager.station_playlists:
@@ -185,7 +156,7 @@ class RadioTab:
                     pygame.mixer.music.stop()
                 self.current_song = None
 
-            wait_time = 300 if self.shared_state.active_station_index is not None else 1000
+            wait_time = 300 if self.active_station_index is not None else 1000
             pygame.time.wait(wait_time)
 
     def handle_threads(self, tab_selected: bool):
@@ -194,36 +165,10 @@ class RadioTab:
         else:
             self.visualizer.stop()
 
-    def render_station_list(self):
-        if not self.radio_station_surface or not self.selected_station_text:
-            return
-
-        view_surface = pygame.Surface(
-            (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT - self.draw_space[0]),
-            pygame.SRCALPHA
-        ).convert_alpha()
-
-        view_surface.blit(self.radio_station_surface, (0, 0))
-        pygame.draw.rect(view_surface, settings.PIP_BOY_LIGHT, self.selected_station_rect)
-        view_surface.blit(self.selected_station_text,
-                          (settings.RADIO_STATION_TEXT_MARGIN, self.selected_station_rect.y))
-
-        if self.shared_state.active_station_index is not None and self.shared_state.station_playing:
-            dot = (self.selected_station_dot_darker
-                   if self.shared_state.active_station_index == self.selected_station_index
-                   else self.selected_station_dot)
-            dot_y = (self.shared_state.active_station_index * self.font_height +
-                     (self.font_height // 2) -
-                     (settings.RADIO_STATION_SELECTION_DOT_SIZE // 2))
-            view_surface.blit(dot,
-                              (settings.RADIO_STATION_TEXT_MARGIN - settings.RADIO_STATION_SELECTION_MARGIN, dot_y))
-
-        self.screen.blit(view_surface, (settings.TAB_SIDE_MARGIN, self.draw_space[0]))
-
     def render_visualizer_waves(self):
         self.visualizer.render()
 
     def render(self):
         self.tab_instance.render_footer(self)
-        self.render_station_list()
+        self.station_list.render(self.screen, self.active_station_index, self.station_playing)
         self.render_visualizer_waves()

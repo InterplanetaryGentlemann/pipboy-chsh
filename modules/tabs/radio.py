@@ -330,7 +330,7 @@ class RadioTab:
         self.selected_station_dot = pygame.Surface((size, size), pygame.SRCALPHA).convert_alpha()
         self.selected_station_dot.fill(settings.PIP_BOY_LIGHT)
         self.selected_station_dot_darker = pygame.Surface((size, size), pygame.SRCALPHA).convert_alpha()
-        self.selected_station_dot_darker.fill(settings.PIP_BOY_DARKER)
+        self.selected_station_dot_darker.fill(settings.PIP_BOY_DARK)
         self.radio_station_surface = None
         self.selected_station_text = None
 
@@ -385,7 +385,7 @@ class RadioTab:
         self.selected_station_rect.y = self.selected_station_index * self.font_height
         selected_station_name = list(self.loader.radio_stations.keys())[self.selected_station_index]
         self.selected_station_text = self.main_font.render(
-            selected_station_name, True, settings.PIP_BOY_DARKER
+            selected_station_name, True, settings.PIP_BOY_DARK
         )
 
     def play_station_switch_sound(self):

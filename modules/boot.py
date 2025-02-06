@@ -304,8 +304,7 @@ class BootThumbs(BaseBootSequence):
         
         
         pygame.time.wait(settings.SPEED * 20)
-        
-        
+
         self.blink += self.blink_direction
         if self.blink >= 255:
             self.blink_direction = -6

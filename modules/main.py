@@ -3,7 +3,6 @@ import pygame
 import settings
 from pipboy import PipBoy
 import threading
-from render import Render
 from input_manager import InputManager
 
 

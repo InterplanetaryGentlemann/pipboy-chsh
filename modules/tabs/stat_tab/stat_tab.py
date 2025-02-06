@@ -1,13 +1,15 @@
 import pygame
 import settings
 from .status_tab import StatusTab
+from .special_tab import SpecialTab
 
 class StatTab:
-    def __init__(self, screen, tab_instance, draw_space: tuple):
+    def __init__(self, screen, tab_instance, draw_space: pygame.Rect):
         self.screen = screen
         self.tab_instance = tab_instance
-        self.draw_space = pygame.Rect(0, draw_space[0], settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT - draw_space[1] - draw_space[0])
-        self.current_sub_tab = 0
+        self.draw_space = draw_space
+        
+        self.current_sub_tab_index = 0
         
         
         self.dynamic_footer_text = [
@@ -21,6 +23,7 @@ class StatTab:
         self.tab_instance.init_footer(self, (settings.SCREEN_WIDTH // 4, settings.SCREEN_WIDTH // 2), self.init_footer_text())
         
         self.status_tab = StatusTab(self.screen, self.tab_instance, self.draw_space)
+        self.special_tab = SpecialTab(self.screen, self.tab_instance, self.draw_space)
 
     
     def init_footer_text(self): 
@@ -41,30 +44,44 @@ class StatTab:
         footer_surface.blit(hp_surface, (2, 2))
         footer_surface.blit(level_surface, (settings.SCREEN_WIDTH // 3.8, 2))
         pygame.draw.rect(footer_surface, settings.PIP_BOY_LIGHT, xp_rect)
-        pygame.draw.rect(footer_surface, settings.PIP_BOY_MID, xp_rect_base, 1)
+        pygame.draw.rect(footer_surface, settings.PIP_BOY_DARKER, xp_rect_base, 1)
         footer_surface.blit(ap_surface, (settings.SCREEN_WIDTH // 1.2, 2))
         
         return footer_surface
     
     
     def change_sub_tab(self, sub_tab: int):
-        self.current_sub_tab = sub_tab
+        self.current_sub_tab_index = sub_tab
+
+
+    def scroll(self, direction: bool):
+        match self.current_sub_tab_index:
+            case 0: # STATUS
+                pass
+            case 1: # SPECIAL
+                self.special_tab.scroll_special(direction)
+            case 2: # PERKS
+                pass
+            case _: # DEFAULT
+                pass
 
 
     def handle_threads(self, tab_selected: bool):
         if tab_selected:
             self.status_tab.start()
+            self.special_tab.start()
         else:
             self.status_tab.stop()
+            self.special_tab.stop()
         
 
     def render(self):
         self.tab_instance.render_footer(self)
-        match self.current_sub_tab:
+        match self.current_sub_tab_index:
             case 0: # Status
                 self.status_tab.render()
             case 1: # Special
-                pass
+                self.special_tab.render()
             case 2: # Perks
                 pass
             case _:

@@ -6,6 +6,7 @@ import math
 from threading import Thread, Lock
 from tabs.radio_tab.radio_tab import RadioTab
 from tabs.stat_tab.stat_tab import StatTab
+from tabs.inv_tab.inv_tab import InvTab
 from tab import Tab
 
 
@@ -31,11 +32,13 @@ class TabManager:
         self.tab_text_surface = pygame.Surface((settings.SCREEN_WIDTH, self.tab_font_height))
         self.init_tab_text()
         
-        self.draw_space = ((settings.TAB_SCREEN_EDGE_LENGTH + self.tab_font_height * 2 + settings.TAB_BOTTOM_MARGIN), settings.BOTTOM_BAR_HEIGHT + settings.BOTTOM_BAR_MARGIN)
+        draw_space = ((settings.TAB_SCREEN_EDGE_LENGTH + self.tab_font_height * 2 + settings.TAB_BOTTOM_MARGIN), settings.BOTTOM_BAR_HEIGHT + settings.BOTTOM_BAR_MARGIN)
+        self.draw_space = pygame.Rect(0, draw_space[0], settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT - draw_space[1] - draw_space[0])
         
         self.tab_base = Tab(self.screen)
         self.radio_tab = RadioTab(self.screen, self.tab_base, self.draw_space)
         self.stat_tab = StatTab(self.screen, self.tab_base, self.draw_space)
+        self.inv_tab = InvTab(self.screen, self.tab_base, self.draw_space)
         
         self.subtab_surfaces = {}  # Pre-rendered text surfaces for all states
         self.subtab_total_widths = {}  # Pre-calculated total width for each tab's subtabs
@@ -66,7 +69,7 @@ class TabManager:
             for subtab in subtabs:
                 # Pre-render both color states
                 active_surf = self.main_tab_font.render(subtab, True, settings.PIP_BOY_LIGHT)
-                inactive_surf = self.main_tab_font.render(subtab, True, settings.PIP_BOY_DARKER)
+                inactive_surf = self.main_tab_font.render(subtab, True, settings.PIP_BOY_DARK)
                 width = active_surf.get_width()
                 
                 self.subtab_surfaces[tab_name].append((active_surf, inactive_surf))
@@ -124,7 +127,7 @@ class TabManager:
             case 0: # STAT
                 Thread(target=self.stat_tab.handle_threads, args=(True,)).start()
             case 1: # INV
-                pass
+                Thread(target=self.inv_tab.handle_threads, args=(True,)).start()
             case 2: # DATA
                 pass
             case 3: # MAP
@@ -135,7 +138,7 @@ class TabManager:
             case 0: # STAT
                 Thread(target=self.stat_tab.handle_threads, args=(False,)).start()
             case 1: # INV
-                pass
+                Thread(target=self.inv_tab.handle_threads, args=(False,)).start()
             case 2: # DATA
                 pass
             case 3: # MAP
@@ -179,7 +182,7 @@ class TabManager:
                 case 0: # STAT
                     self.stat_tab.change_sub_tab(new_index)
                 case 1: # INV
-                    pass
+                    self.inv_tab.change_sub_tab(new_index)
                 case 2: # DATA
                     pass
                 case 3: # MAP
@@ -194,9 +197,9 @@ class TabManager:
     def scroll_tab(self, direction: bool):
         match self.current_tab_index:
             case 0: # STAT
-                pass
+                self.stat_tab.scroll(direction)
             case 1: # INV
-                pass
+                self.inv_tab.scroll(direction)
             case 2: # DATA
                 pass
             case 3: # MAP
@@ -211,7 +214,7 @@ class TabManager:
             case 0: # STAT
                 pass
             case 1: # INV
-                pass
+                self.inv_tab.select_item()
             case 2: # DATA
                 pass
             case 3: # MAP
@@ -305,7 +308,7 @@ class TabManager:
             case 0: # STAT
                 self.stat_tab.render()
             case 1: # INV
-                pass
+                self.inv_tab.render()
             case 2: # DATA
                 pass
             case 3: # MAP

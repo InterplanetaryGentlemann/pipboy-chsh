@@ -6,16 +6,16 @@ import settings
 from threading import Thread, Lock
 
 class Visualizer:
-    def __init__(self, draw_space, screen, shared_state):
+    def __init__(self, draw_space: pygame.Rect, screen, radio_tab_instance):
         self.draw_space = draw_space
         self.screen = screen
-        self.shared_state = shared_state
+        self.radio_tab_instance = radio_tab_instance
 
-        self.visualizer_size = (settings.SCREEN_WIDTH // 2 -
+        self.visualizer_size = (self.draw_space.centerx -
                                 settings.TAB_SIDE_MARGIN * 2 -
                                 settings.RADIO_WAVE_VISUALIZER_SIZE_OFFSET)
-        self.vis_x = settings.SCREEN_WIDTH // 2 + settings.RADIO_WAVE_VISUALIZER_SIZE_OFFSET // 2
-        self.vis_y = self.draw_space[0]
+        self.vis_x = self.draw_space.centerx + settings.RADIO_WAVE_VISUALIZER_SIZE_OFFSET // 2
+        self.vis_y = self.draw_space.top
         self.midpoint_y = self.vis_y + self.visualizer_size // 2
 
         self.wave_points = np.zeros(64, dtype=np.float32)
@@ -39,7 +39,7 @@ class Visualizer:
         self.change_station_wave_counter = 0
 
         self.wave_surface = pygame.Surface(
-            (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT),
+            (self.draw_space.width, self.draw_space.height),
             pygame.SRCALPHA
         ).convert_alpha()
         
@@ -49,7 +49,7 @@ class Visualizer:
 
     def _prepare_grid(self):
         grid_surface = pygame.Surface(
-            (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT),
+            (self.draw_space.width, self.draw_space.height),
             pygame.SRCALPHA
         ).convert_alpha()
         grid_surface.fill((0, 0, 0, 0))
@@ -90,16 +90,16 @@ class Visualizer:
             total_wave = np.sum(np.sin(self.waves[:, 2]) * self.waves[:, 1]) / len(self.waves)
 
             # State checks and pattern changes
-            station_playing = self.shared_state.station_playing
-            active_station_index = self.shared_state.active_station_index
+            station_playing = self.radio_tab_instance.station_playing
+            active_station_index = self.radio_tab_instance.active_station_index
 
             if not station_playing and abs(total_wave) < 0.05:
                 self._prepare_wave_pattern('idle')
                 self.change_station_wave_counter = 0
-            elif active_station_index != self.shared_state.previous_station_index:
+            elif active_station_index != self.radio_tab_instance.previous_station_index:
                 self._prepare_wave_pattern('changing')
                 self.change_station_wave_counter = random.randint(30, 90)
-                self.shared_state.previous_station_index = active_station_index
+                self.radio_tab_instance.previous_station_index = active_station_index
             elif self.change_station_wave_counter > 0:
                 self.change_station_wave_counter -= 1
                 if self.change_station_wave_counter == 1:
@@ -120,7 +120,7 @@ class Visualizer:
         while self.visualizer_thread_running:
             self.change_visualizer_wave(batch_size)
             # Adjust wait time to maintain the same sample rate
-            pygame.time.wait(settings.SPEED * 100)
+            pygame.time.wait(settings.SPEED * 50)
 
     def start(self):
         if not self.visualizer_thread or not self.visualizer_thread.is_alive():

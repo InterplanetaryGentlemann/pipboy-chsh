@@ -19,18 +19,18 @@ class Tab:
         
         # Create a new surface for the footer
         footer_surface = pygame.Surface((settings.SCREEN_WIDTH, settings.BOTTOM_BAR_HEIGHT))
-        footer_surface.fill(settings.PIP_BOY_DARKER)
+        footer_surface.fill(settings.PIP_BOY_DARK)
         
         if margins is not None:
             line = 0
             for margin in margins:
-                line += margin - settings.TAB_BOTTOM_VERTICAL_MARGINS // 2
+                line += margin - settings.BOTTOM_BAR_VERTICAL_MARGINS // 2
                 pygame.draw.line(
                     footer_surface,
                     settings.BACKGROUND,
                     (line, 0),
                     (line, settings.BOTTOM_BAR_HEIGHT),
-                    settings.TAB_BOTTOM_VERTICAL_MARGINS  # Line width
+                    settings.BOTTOM_BAR_VERTICAL_MARGINS  # Line width
                 )
                 
         if text_surface is not None:
@@ -57,20 +57,55 @@ class Tab:
         tinted.fill(color[:3] + (0,), special_flags=pygame.BLEND_RGB_MULT)
         return tinted       
         
-    def _scale_image(self, image, scale: float):
+    def scale_image(self, image, scale: float):
+        return pygame.transform.smoothscale_by(
+            image, 
+            scale
+        )
+        
+        
+    # scale image absolute but keep aspect ratio
+    def scale_image_abs(self, image, width: float = None, height: float = None):
+        
+        if width is None and height is None:
+            return image
+        
+        if width is None:
+            width = image.get_width() * (height / image.get_height())
+        elif height is None:
+            height = image.get_height() * (width / image.get_width())
+        
+        
         return pygame.transform.smoothscale(
             image, 
-            (int(image.get_width() * scale), int(image.get_height() * scale))
+            (height, width)
         )
 
 
-    def _load_images(self, folder: str, tint: tuple=settings.PIP_BOY_LIGHT):
-        return [
-            self._tint_image(
-                pygame.image.load(os.path.join(folder, f)).convert_alpha(),
+
+    def load_images(self, folder: str, tint: tuple=settings.PIP_BOY_LIGHT):
+        try:
+            images = [
+                self._tint_image(
+                    pygame.image.load(os.path.join(folder, f)).convert_alpha(),
+                    tint
+                ) for f in os.listdir(folder) if f.endswith(".png")
+            ]
+            return images
+        except FileNotFoundError:
+            print(f"Folder {folder} not found")
+            return []
+        
+        
+        
+    def load_svg(self, scale: int, path: str, tint: tuple=settings.PIP_BOY_LIGHT):
+        
+        if path.endswith(".svg"):
+            return self._tint_image(
+                pygame.image.load_sized_svg(path, (scale, scale)).convert_alpha(),
                 tint
-            ) for f in os.listdir(folder) if f.endswith(".png")
-        ]
+            )
+
 
     def play_sfx(self, sound_file, volume=settings.VOLUME, start=0):
         """

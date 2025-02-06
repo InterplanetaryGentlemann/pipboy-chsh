@@ -1,7 +1,6 @@
 import pygame
 import settings
 from threading import Thread
-import os
 from data_models import IconConfig  # Changed import
 from typing import Dict, List
 
@@ -20,15 +19,14 @@ class StatusTab:
         self._init_vault_boy()
         self._init_player_name()
         
-        self.setup_limb_damage(settings.LIMB_DAMAGE)
-
+        self.setup_limb_damage(settings.DEFAULT_LIMB_DAMAGE)
 
         self.setup_stats_display(settings.DEFAULT_STATS_DAMAGE, settings.DEFAULT_STATS_ARMOR)
 
     def _init_vault_boy(self):
         """Initialize vault boy animation components"""
-        self.vaultboy_legs = self.tab_instance._load_images(settings.STAT_TAB_LEGS_BASE_FOLDER)
-        self.vaultboy_heads = self.tab_instance._load_images(settings.STAT_TAB_HEAD_BASE_FOLDER)
+        self.vaultboy_legs = self.tab_instance.load_images(settings.STAT_TAB_LEGS_BASE_FOLDER)
+        self.vaultboy_heads = self.tab_instance.load_images(settings.STAT_TAB_HEAD_BASE_FOLDER)
         
         self.vaultboy_legs_index = 0
         self.vaultboy_heads_index = 0
@@ -45,8 +43,8 @@ class StatusTab:
 
     def _setup_vault_boy_positions(self, scale: float):
         """Set up vault boy animation positions and scaling"""
-        self.scaled_legs = [self.tab_instance._scale_image(img, scale) for img in self.vaultboy_legs]
-        self.scaled_heads = [self.tab_instance._scale_image(img, scale) for img in self.vaultboy_heads]
+        self.scaled_legs = [self.tab_instance.scale_image(img, scale) for img in self.vaultboy_legs]
+        self.scaled_heads = [self.tab_instance.scale_image(img, scale) for img in self.vaultboy_heads]
 
         self.vaultboy_surface = pygame.Surface(
             (self.draw_space.width, self.draw_space.height), 
@@ -55,11 +53,11 @@ class StatusTab:
         
         # Calculate centered positions
         self.positions = {}
-        for part, offset in settings.VAULT_BOY_OFFSETS.items():
+        for part in ("legs", "head"):
             images = self.scaled_legs if part == 'legs' else self.scaled_heads
             x_center = (self.vaultboy_surface.get_width() // 2 - 
-                       images[0].get_width() // 2 + offset[0])
-            y_pos = self.draw_space.top + offset[1]
+                       images[0].get_width() // 2)
+            y_pos = self.draw_space.top + (settings.VAULT_BOY_OFFSET if part == 'legs' else -(settings.VAULT_BOY_OFFSET * 1.5))
             self.positions[part] = (x_center, y_pos)
 
         # Center animation surface
@@ -95,7 +93,7 @@ class StatusTab:
             nonlocal margin
             
             # Render big icon
-            big_icon = self.tab_instance._scale_image(
+            big_icon = self.tab_instance.scale_image(
                 pygame.image.load(icons[icon_type]['big']).convert_alpha(),
                 settings.DAMAGE_ARMOUR_ICON_BIG_SIZE
             )
@@ -105,7 +103,7 @@ class StatusTab:
             # Draw background rectangle
             pygame.draw.rect(
                 self.stats_surface,
-                settings.PIP_BOY_DARKER,
+                settings.PIP_BOY_DARK,
                 (margin, 0, big_rect_size, big_rect_size)
             )
             
@@ -122,7 +120,7 @@ class StatusTab:
                 margin += settings.DAMAGE_ARMOUR_MARGIN_SMALL
                 
                 # Scale and load small icon
-                small_icon = self.tab_instance._scale_image(
+                small_icon = self.tab_instance.scale_image(
                     pygame.image.load(small_icon_path).convert_alpha(),
                     settings.DAMAGE_ARMOUR_ICON_SMALL_SIZE
                 )
@@ -132,7 +130,7 @@ class StatusTab:
                 # Draw background rectangle
                 pygame.draw.rect(
                     self.stats_surface,
-                    settings.PIP_BOY_DARKER,
+                    settings.PIP_BOY_DARK,
                     (margin, 0, small_rect_size, big_rect_size)
                 )
                 
@@ -245,7 +243,7 @@ class StatusTab:
                 )
             
             self.vaultboy_legs_index = (self.vaultboy_legs_index + 1) % len(self.scaled_legs)
-            pygame.time.wait(125 * settings.SPEED)
+            pygame.time.wait(settings.SPEED * 150)
 
     def start(self):
         """Start the vault boy animation thread"""
