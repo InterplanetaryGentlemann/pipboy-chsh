@@ -2,6 +2,7 @@ import pygame
 import settings
 from .inv_base import InvBase
 from ui import ItemGrid
+from util_functs import Utils
 
 class ApparelTab(InvBase):
     def __init__(self, screen, tab_instance, draw_space):
@@ -12,8 +13,8 @@ class ApparelTab(InvBase):
         self.tab_instance.init_footer(self, (settings.SCREEN_WIDTH // 4, settings.SCREEN_WIDTH // 4), self.init_footer_text())
         
         # Load icons specific to apparel.
-        self.armor_icon = self.tab_instance.load_svg(self.big_icon_size, settings.ARMOR_ICON)
-        self.defense_icon = self.tab_instance.load_svg(self.small_icon_size, settings.DEFENSE_ICON)
+        self.armor_icon = Utils.load_svg(self.big_icon_size, settings.ARMOR_ICON)
+        self.defense_icon = Utils.load_svg(self.small_icon_size, settings.DEFENSE_ICON)
         
         # (Assuming self.defense_icons is set elsewhere, e.g., in the parent or during tab initialization)
         

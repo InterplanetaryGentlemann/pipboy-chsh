@@ -3,13 +3,14 @@ import settings
 from threading import Thread
 from data_models import IconConfig  # Changed import
 from typing import Dict, List
+from util_functs import Utils
 
 
 class StatusTab:    
 
     def __init__(self, screen, tab_instance, draw_space: pygame.Rect):
         self.screen = screen
-        self.tab_instance = tab_instance
+        Utils = tab_instance
         self.draw_space = draw_space
         self.vaultboy_thread = None
         self.vaultboy_thread_running = False
@@ -25,8 +26,8 @@ class StatusTab:
 
     def _init_vault_boy(self):
         """Initialize vault boy animation components"""
-        self.vaultboy_legs = self.tab_instance.load_images(settings.STAT_TAB_LEGS_BASE_FOLDER)
-        self.vaultboy_heads = self.tab_instance.load_images(settings.STAT_TAB_HEAD_BASE_FOLDER)
+        self.vaultboy_legs = Utils.load_images(settings.STAT_TAB_LEGS_BASE_FOLDER)
+        self.vaultboy_heads = Utils.load_images(settings.STAT_TAB_HEAD_BASE_FOLDER)
         
         self.vaultboy_legs_index = 0
         self.vaultboy_heads_index = 0
@@ -43,8 +44,8 @@ class StatusTab:
 
     def _setup_vault_boy_positions(self, scale: float):
         """Set up vault boy animation positions and scaling"""
-        self.scaled_legs = [self.tab_instance.scale_image(img, scale) for img in self.vaultboy_legs]
-        self.scaled_heads = [self.tab_instance.scale_image(img, scale) for img in self.vaultboy_heads]
+        self.scaled_legs = [Utils.scale_image(img, scale) for img in self.vaultboy_legs]
+        self.scaled_heads = [Utils.scale_image(img, scale) for img in self.vaultboy_heads]
 
         self.vaultboy_surface = pygame.Surface(
             (self.draw_space.width, self.draw_space.height), 
@@ -93,12 +94,12 @@ class StatusTab:
             nonlocal margin
             
             # Render big icon
-            big_icon = self.tab_instance.scale_image(
+            big_icon = Utils.scale_image(
                 pygame.image.load(icons[icon_type]['big']).convert_alpha(),
                 settings.DAMAGE_ARMOUR_ICON_BIG_SIZE
             )
             
-            big_icon = self.tab_instance._tint_image(big_icon)
+            big_icon = Utils.tint_image(big_icon)
             
             # Draw background rectangle
             pygame.draw.rect(
@@ -120,12 +121,12 @@ class StatusTab:
                 margin += settings.DAMAGE_ARMOUR_MARGIN_SMALL
                 
                 # Scale and load small icon
-                small_icon = self.tab_instance.scale_image(
+                small_icon = Utils.scale_image(
                     pygame.image.load(small_icon_path).convert_alpha(),
                     settings.DAMAGE_ARMOUR_ICON_SMALL_SIZE
                 )
                 
-                small_icon = self.tab_instance._tint_image(small_icon)
+                small_icon = Utils.tint_image(small_icon)
                 
                 # Draw background rectangle
                 pygame.draw.rect(

@@ -3,8 +3,7 @@ import pygame
 import settings
 from ui import GenericList, AnimatedImage
 from items import Inventory
-import os
-
+from util_functs import Utils
             
             
 class InvBase:
@@ -68,12 +67,12 @@ class InvBase:
         self.big_icon_size = settings.BOTTOM_BAR_HEIGHT - (settings.BOTTOM_BAR_HEIGHT // 4)
         self.small_icon_size = settings.BOTTOM_BAR_HEIGHT - (settings.BOTTOM_BAR_HEIGHT // 2)
         
-        self.weight_icon = self.tab_instance.load_svg(self.big_icon_size, settings.WEIGHT_ICON)
-        self.caps_icon = self.tab_instance.load_svg(self.big_icon_size, settings.CAPS_ICON)
+        self.weight_icon = Utils.load_svg(self.big_icon_size, settings.WEIGHT_ICON)
+        self.caps_icon = Utils.load_svg(self.big_icon_size, settings.CAPS_ICON)
         
         
         self.damage_icons = {
-            dtype: self.tab_instance.load_svg(self.small_icon_size, path)
+            dtype: Utils.load_svg(self.small_icon_size, path)
             for dtype, path in settings.DAMAGE_TYPES_ICONS.items()
         }        
         
@@ -142,11 +141,11 @@ class InvBase:
         if not selected_item.icons: 
             return  
         folder = f"{settings.ITEMS_BASE_FOLDER}/{selected_item.icons}"
-        icons = self.tab_instance.load_images(folder) 
+        icons = Utils.load_images(folder) 
         if not icons:
             return
         
-        icons = [self.tab_instance.scale_image_abs(image, height=self.turntable_draw_space.height) for image in icons]
+        icons = [Utils.scale_image_abs(image, height=self.turntable_draw_space.height) for image in icons]
      
         self.item_turntable = AnimatedImage(
             self.screen,

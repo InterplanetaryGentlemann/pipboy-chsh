@@ -59,3 +59,4 @@ ROTARY_HORIZONTAL_2 = "../sounds/pipboy/RotaryHorizontal/UI_PipBoy_RotaryHorizon
 ROTARY_VERTICAL_1 = "../sounds/pipboy/RotaryVertical/UI_PipBoy_RotaryVertical_01.ogg"
 ROTARY_VERTICAL_2 = "../sounds/pipboy/RotaryVertical/UI_PipBoy_RotaryVertical_02.ogg"
 OK_SOUND = "../sounds/pipboy/UI_PipBoy_OK.ogg"
+SPECIAL_SOUNDS = "../sounds/pipboy/PerkMenu/SPECIAL"

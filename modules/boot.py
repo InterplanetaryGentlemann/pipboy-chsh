@@ -1,23 +1,12 @@
 import os
 import pygame
 import settings
+from util_functs import Utils
+from ui import AnimatedImage
 
 
-class BaseBootSequence:
-    def __init__(self):
-        pass
-    def play_sfx(self, sound_file, volume=settings.VOLUME):
-        """
-        Play a sound file.
-        """
-        if settings.SOUND_ON:
-            sound = pygame.mixer.Sound(sound_file)
-            sound.set_volume(volume)
-            sound.play(0)
-
-class BootText(BaseBootSequence):
+class BootText():
     def __init__(self, screen):
-        super().__init__()
         self.font = pygame.font.Font(settings.TECH_MONO_FONT_PATH, 8)
         self.font_height = self.font.get_height()
         self.boot_text_start = ("* 1 0 0x0000A4 0x00000000000000000 start memory discovery 0 0x0000A4 \n"
@@ -146,7 +135,7 @@ class BootText(BaseBootSequence):
     def display_text_sequence(self):
         """Display text sequence with scrolling effect"""
         if self.first_iteration:
-            self.play_sfx(settings.BOOT_SOUND_A)
+            Utils.play_sfx(settings.BOOT_SOUND_A)
             self.first_iteration = False
         
         pygame.time.wait(settings.SPEED * 30)
@@ -159,9 +148,8 @@ class BootText(BaseBootSequence):
         self.screen.blit(self.full_text_surface, (0, self.y_offset))  # Draw the text at the current y_offset
 
 
-class BootCopyright(BaseBootSequence):
+class BootCopyright():
     def __init__(self, screen):
-        super().__init__()
         self.font = pygame.font.Font(settings.TECH_MONO_FONT_PATH, 12)
         self.font_height = self.font.get_height()
         self.copyright_text = ("*************** PIP-05 (R) V7 .1.0.8 **************\n"
@@ -212,7 +200,7 @@ class BootCopyright(BaseBootSequence):
         match self.current_state:
             case "cursor_initial":
                 if self.cursor_blink_count > 7:
-                    self.play_sfx(settings.BOOT_SOUND_B)
+                    Utils.play_sfx(settings.BOOT_SOUND_B)
                     self.current_state = next(self.states)
                     self.cursor_blink_count = 0
                     self.cur_cursor_position = 1
@@ -267,24 +255,15 @@ class BootCopyright(BaseBootSequence):
                     return True
                     
 
-class BootThumbs(BaseBootSequence):
+class BootThumbs():
     def __init__(self, screen):
-        super().__init__()
         self.screen = screen
         self.font = pygame.font.Font(settings.TECH_MONO_FONT_PATH, 10)
-        self.frameorder = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 3, 4, 5, 6, 7, 7, 7, 7, 7, 7, 7, 7,
-                      7,
-                      7, 7, 7, 7, 7, 7, 7, 7, 7]
+
         self.current_frame = 0
         self.real_frame = 0
-        self.images = [
-            pygame.transform.scale(
-                pygame.image.load(os.path.join(settings.BOOT_THUMBS, filename)).convert_alpha(),
-                (pygame.image.load(os.path.join(settings.BOOT_THUMBS, filename)).get_width() // 2,
-                pygame.image.load(os.path.join(settings.BOOT_THUMBS, filename)).get_height() // 2)
-            )
-            for filename in os.listdir(settings.BOOT_THUMBS) if filename.endswith(".png")
-        ]
+        images = Utils.load_images(settings.BOOT_THUMBS)
+        self.images = [Utils.scale_image(image, 0.5) for image in images]
         self.image_center = self.images[0].get_rect().center
         self.init_surface = self.font.render("INITIATING...", True, settings.PIP_BOY_LIGHT)
         self.init_surface_center = self.init_surface.get_rect().center
@@ -293,17 +272,22 @@ class BootThumbs(BaseBootSequence):
         self.blink_direction = 1
         self.first_iteration = True
         
+        frameorder = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 3, 4, 5, 6, 7, 7, 7, 7, 7, 7, 7, 7,
+                      7,
+                      7, 7, 7, 7, 7, 7, 7, 7, 7]        
+        image_position =  (self.screen_center[0] - 59, self.screen_center[1] - 80)
+        self.animated_thumbs = AnimatedImage(self.screen, self.images, image_position, settings.SPEED * 116, frame_order=frameorder, loop=False)
+        
     def display_thumbs(self):
         if self.first_iteration:
-            self.play_sfx(settings.BOOT_SOUND_C)
-            pygame.time.wait(settings.SPEED * 400)
+            Utils.play_sfx(settings.BOOT_SOUND_C)
+            pygame.time.wait(settings.SPEED * 600)
+            self.animated_thumbs.start()
             self.first_iteration = False
         
-        if self.real_frame >= len(self.frameorder):
+        if self.animated_thumbs.current_frame_index  >= len(self.animated_thumbs.frame_order) - 1:
+            self.animated_thumbs.stop()
             return True
-        
-        
-        pygame.time.wait(settings.SPEED * 20)
 
         self.blink += self.blink_direction
         if self.blink >= 255:
@@ -311,17 +295,15 @@ class BootThumbs(BaseBootSequence):
         elif self.blink <= 50:
             self.blink_direction = 6
         self.init_surface.set_alpha(self.blink)
-        
-        self.current_frame += 1
-        self.real_frame = round(int(self.current_frame / 5.8))
+
+        pygame.time.wait(settings.SPEED * 20)
         
         
     def render(self):
         
         self.screen.blit(self.init_surface, (self.screen_center[0] - self.init_surface_center[0], self.screen_center[1] + (self.screen_center[1] // 2)))
         
-        self.screen.blit(self.images[self.frameorder[self.real_frame]], (self.screen_center[0] - 59, self.screen_center[1] - 80))
-        
+        self.animated_thumbs.render()        
             
                
 

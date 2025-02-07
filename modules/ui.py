@@ -2,6 +2,7 @@
 from threading import Thread, Event, Lock
 import pygame
 import settings
+from util_functs import Utils
 
 ###############################################
 # Generic UI elements for the Pip-OS project #
@@ -337,13 +338,14 @@ class ItemGrid:
 
         
 class AnimatedImage:
-    def __init__(self, screen, images, position: tuple, frame_duration: int, frame_order: list=None, loop: bool = True):
+    def __init__(self, screen, images, position: tuple, frame_duration: int, frame_order: list=None, loop: bool = True, sound_path: str = None):
         self.screen = screen
         self.images = images
         self.position = position
         self.frame_duration = frame_duration / 1000  # Convert to seconds
         self.frame_order = frame_order or list(range(len(images)))
         self.loop = loop
+        self.sound_path = sound_path
 
         self.current_frame_index = 0
         self.done = False
@@ -354,7 +356,7 @@ class AnimatedImage:
 
     def _update_loop(self):
         """Thread function for updating frames."""
-        while not self.stop_event.is_set():
+        while not self.stop_event.is_set() or not self.done:
             with self.lock:  # Ensure thread safety for frame updates
                 if self.done:
                     break
@@ -363,6 +365,7 @@ class AnimatedImage:
                 if self.current_frame_index >= len(self.frame_order):
                     if self.loop:
                         self.current_frame_index = 0
+                        self.play_sound()
                     else:
                         self.done = True
                         break
@@ -370,12 +373,19 @@ class AnimatedImage:
             # Instead of sleep, wait with the option to interrupt instantly
             self.stop_event.wait(timeout=self.frame_duration)
 
+
+    def play_sound(self):
+        """Play the sound effect if provided."""
+        if self.sound_path:
+            Utils.play_sfx(self.sound_path, settings.VOLUME / 8, channel=5)
+
     def start(self):
         """Start the animation thread."""
         if self.thread is None or not self.thread.is_alive():
             self.done = False
             self.stop_event.clear()
             self.thread = Thread(target=self._update_loop, daemon=True)
+            self.play_sound()
             self.thread.start()
 
     def stop(self):

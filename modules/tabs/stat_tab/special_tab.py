@@ -3,7 +3,7 @@ import pygame
 import settings
 from threading import Thread
 from ui import GenericList, AnimatedImage
-
+from util_functs import Utils
 
 
 
@@ -14,7 +14,7 @@ class SpecialTab:
         self.draw_space = draw_space
         
         self.special_font = pygame.font.Font(settings.ROBOTO_BOLD_PATH, 12)
-        self.description_font = pygame.font.Font(settings.ROBOTO_BOLD_PATH, 9)
+        self.description_font = pygame.font.Font(settings.ROBOTO_BOLD_PATH, 9) 
         
         list_draw_space = pygame.Rect(
             self.draw_space.left,
@@ -50,7 +50,8 @@ class SpecialTab:
                  self.draw_space.top + settings.LIST_TOP_MARGIN),
                 settings.SPEED * 200,
                 self.frame_orders[special],
-                loop=True
+                loop=True,
+                sound_path=f"{settings.SPECIAL_SOUNDS}/{special}.ogg" if not settings.GAME_ACCURATE_MODE else None
             )
             # self.animated_images[special].start()
         
@@ -106,8 +107,8 @@ class SpecialTab:
             images = []
             for file in os.listdir(path):
                 if file.endswith(".png"):
-                    images.append(self.tab_instance.scale_image(
-                        self.tab_instance._tint_image(
+                    images.append(Utils.scale_image(
+                        Utils.tint_image(
                             pygame.image.load(os.path.join(path, file)).convert_alpha()
                         ),
                         settings.SPECIAL_IMAGE_SCALE

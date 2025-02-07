@@ -23,13 +23,20 @@ SUBTABS = {
 # User Configuration (Adjust these for setup/preferences)
 # ==================================================
 
+
+# ------------------
+# General Settings
+# ------------------
+SPEED = 1
+GAME_ACCURATE_MODE = False
+
 # ------------------
 # Screen Settings
 # ------------------
 SCREEN_WIDTH = 320
 SCREEN_HEIGHT = 255
 FPS = 24
-SPEED = 1
+
 BACKGROUND = (0, 0, 0)
 PIP_BOY_LIGHT = (0, 255, 0)
 PIP_BOY_MIDDLE = (0, 190, 0)
@@ -49,8 +56,10 @@ SWITCH_SOUND_CHANCE = 70
 # ------------------
 SHOW_CRT = True
 BLOOM_EFFECT = True
-GLITCH_MOVE_CHANCE = 40
+GLITCH_MOVE_CHANCE = 60
 BOOT_SCREEN = False
+RANDOM_GLITCHES = True
+RANDOM_GLITCH_CHANCE = 0.5
 
 # ------------------
 # Path Configuration

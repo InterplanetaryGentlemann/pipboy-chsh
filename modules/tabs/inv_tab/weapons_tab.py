@@ -2,7 +2,7 @@ import pygame
 import settings
 from .inv_base import InvBase
 from ui import ItemGrid
-
+from util_functs import Utils
 
 
 class WeaponsTab(InvBase):
@@ -10,8 +10,8 @@ class WeaponsTab(InvBase):
         super().__init__(screen, tab_instance, draw_space, category='Weapon', enable_dot=True)
         self.tab_instance.init_footer(self, (settings.SCREEN_WIDTH // 4, settings.SCREEN_WIDTH // 4), self.init_footer_text())
         
-        self.ammo_icon = self.tab_instance.load_svg(self.small_icon_size, settings.AMMO_ICON)
-        self.gun_icon = self.tab_instance.load_svg(self.big_icon_size, settings.GUN_ICON)
+        self.ammo_icon = Utils.load_svg(self.small_icon_size, settings.AMMO_ICON)
+        self.gun_icon = Utils.load_svg(self.big_icon_size, settings.GUN_ICON)
         self.item_grid = ItemGrid(
             draw_space=self.calculate_grid_space(),
             font=self.inv_font,

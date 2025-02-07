@@ -2,6 +2,7 @@ import pygame
 import settings
 from .inv_base import InvBase
 from ui import ItemGrid
+from util_functs import Utils
 
 class AidTab(InvBase):
     def __init__(self, screen, tab_instance, draw_space):
@@ -17,7 +18,7 @@ class AidTab(InvBase):
         
         # Load time icon.
         
-        self.time_icon = self.tab_instance.load_svg(self.small_icon_size, settings.TIME_ICON)
+        self.time_icon = Utils.load_svg(self.small_icon_size, settings.TIME_ICON)
               
         # Initialize the item grid.
         self.item_grid = ItemGrid(

@@ -24,7 +24,8 @@ class PipBoy:
         if settings.BOOT_SCREEN:
             self.current_sequence = "boot"
             self.boot_instance = Boot(self.screen)
-            threading.Thread(target=self.boot_instance.run, daemon=True).start()
+            self.boot_thread = threading.Thread(target=self.boot_instance.run, daemon=True)
+            self.boot_thread.start()
 
 
         if settings.SHOW_CRT:
@@ -78,9 +79,9 @@ class PipBoy:
                     case "boot":
                         self.boot_instance.start()
                         self.boot_thread.join()
-                        # del self.boot_instance
                         self.current_sequence = next(self.states)
                     case "main":
+                        self.boot_instance = None
                         if settings.SOUND_ON:
                             self.play_hum(settings.BACKGROUND_HUM, settings.VOLUME / 10, -1)
                         self.done = True

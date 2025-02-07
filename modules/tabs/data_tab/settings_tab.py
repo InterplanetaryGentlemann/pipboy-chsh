@@ -5,6 +5,7 @@ from threading import Thread
 from ui import GenericList
 from items import Inventory
 import settings
+from util_functs import Utils
 
 class SettingsTab:
     def __init__(self, screen, tab_instance, draw_space: pygame.Rect):
@@ -23,7 +24,7 @@ class SettingsTab:
         
     def _init_icons(self):
         self.big_icon_size = settings.BOTTOM_BAR_HEIGHT - (settings.BOTTOM_BAR_HEIGHT // 4)
-        self.save_icon = self.tab_instance.load_svg(self.big_icon_size, settings.GUN_ICON)
+        self.save_icon = Utils.load_svg(self.big_icon_size, settings.GUN_ICON)
         
     def _load_settings(self):
         self.settings = []

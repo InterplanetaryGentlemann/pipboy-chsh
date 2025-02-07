@@ -5,6 +5,7 @@ import pygame
 from threading import Thread
 import settings
 import os
+from util_functs import Utils
 
 from .radio_station_loader import RadioStationLoader
 from .playlist_manager import PlaylistManager
@@ -56,7 +57,7 @@ class RadioTab:
 
     def play_station_switch_sound(self):
         sound = random.choice(os.listdir(settings.RADIO_STATIC_BURSTS_BASE_FOLDER))
-        self.tab_instance.play_sfx(
+        Utils.play_sfx(
             os.path.join(settings.RADIO_STATIC_BURSTS_BASE_FOLDER, sound),
             settings.VOLUME
         )
@@ -71,7 +72,7 @@ class RadioTab:
             self.station_playing = True
 
         if not self.station_playing:
-            self.tab_instance.play_sfx(settings.RADIO_TURN_OFF_SOUND)
+            Utils.play_sfx(settings.RADIO_TURN_OFF_SOUND)
         else:
             self.play_station_switch_sound()
 
