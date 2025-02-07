@@ -229,9 +229,10 @@ class StatusTab:
     def update_vaultboy(self):
         """Update vault boy animation frame"""
         while self.vaultboy_thread_running:
-            self.vaultboy_surface.fill((0, 0, 0, 0))
             
-            step_offset = self.vaultboy_steps[self.vaultboy_legs_index]
+            step_offset_y = self.vaultboy_steps[self.vaultboy_legs_index]
+            step_offset_x = self.vaultboy_steps[self.vaultboy_legs_index]
+            self.vaultboy_surface.fill((0, 0, 0, 0))
             
             for part, pos in self.positions.items():
                 images = self.scaled_legs if part == 'legs' else self.scaled_heads
@@ -239,11 +240,10 @@ class StatusTab:
                 
                 self.vaultboy_surface.blit(
                     images[index],
-                    (pos[0] + step_offset // 20, pos[1] + step_offset)
+                    (pos[0] + step_offset_x / 2, pos[1] + step_offset_y / 4)
                 )
-            
             self.vaultboy_legs_index = (self.vaultboy_legs_index + 1) % len(self.scaled_legs)
-            pygame.time.wait(settings.SPEED * 150)
+            pygame.time.wait(settings.SPEED * 100)
     
     def handle_threads(self, tab_selected: bool):
         """ Handle the threads"""

@@ -7,6 +7,7 @@ from threading import Thread, Lock
 from tabs.radio_tab.radio_tab import RadioTab
 from tabs.stat_tab.stat_tab import StatTab
 from tabs.inv_tab.inv_tab import InvTab
+from tabs.data_tab.data_tab import DataTab
 from tab import Tab, ThreadHandler
 
 
@@ -39,11 +40,12 @@ class TabManager:
         self.radio_tab = RadioTab(self.screen, self.tab_base, self.draw_space)
         self.stat_tab = StatTab(self.screen, self.tab_base, self.draw_space)
         self.inv_tab = InvTab(self.screen, self.tab_base, self.draw_space)
+        self.data_tab = DataTab(self.screen, self.tab_base, self.draw_space)
         
         tab_map = {
             0: self.stat_tab,
             1: self.inv_tab,
-            # Skipping indices 2 and 3 if they don’t need handling
+            2: self.data_tab,
             4: self.radio_tab,
         }
 
@@ -188,7 +190,7 @@ class TabManager:
                 case 1: # INV
                     self.inv_tab.change_sub_tab(new_index)
                 case 2: # DATA
-                    pass
+                    self.data_tab.change_sub_tab(new_index)
                 case 3: # MAP
                     pass
                 case 4: # RADIO
@@ -205,7 +207,7 @@ class TabManager:
             case 1: # INV
                 self.inv_tab.scroll(direction)
             case 2: # DATA
-                pass
+                self.data_tab.scroll(direction)
             case 3: # MAP
                 pass
             case 4: # RADIO
@@ -221,7 +223,7 @@ class TabManager:
             case 1: # INV
                 self.inv_tab.select_item()
             case 2: # DATA
-                pass
+                self.data_tab.select_item()
             case 3: # MAP
                 pass
             case 4: # RADIO
@@ -315,7 +317,7 @@ class TabManager:
             case 1: # INV
                 self.inv_tab.render()
             case 2: # DATA
-                pass
+                self.data_tab.render()
             case 3: # MAP
                 pass
             case 4: # RADIO

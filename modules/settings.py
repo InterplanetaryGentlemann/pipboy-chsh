@@ -15,7 +15,7 @@ TABS = ("STAT", "INV", "DATA", "MAP", "RADIO")
 SUBTABS = {
     "STAT": ("STATUS", "SPECIAL", "PERKS"),
     "INV": ("WEAPONS", "APPAREL", "AID", "MISC", "JUNK", "MODS", "AMMO"),
-    "DATA": ("QUESTS", "WORKSHOPS", "STATS"),
+    "DATA": ("QUESTS", "WORKSHOPS", "STATS", "SETTINGS"),
     "MAP": ("LOCAL", "WORLD"),
 }
 
@@ -112,6 +112,8 @@ _inventory.add_item(items['.308 Round'], 10)
 _inventory.add_item(items['Fusion Cell'], 25)
 _inventory.add_item(items['10mm Round'], 37)
 _inventory.add_item(items['Mini Nuke'])
+
+
 
 for item in _inventory.get_all_items():
     for i in range(7):

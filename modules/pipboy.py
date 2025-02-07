@@ -4,7 +4,7 @@ import threading
 import settings
 import overlays
 from tab_manager import TabManager
-
+import random  
 
 class PipBoy:
     def __init__(self, screen, clock, input_manager):
