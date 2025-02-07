@@ -10,8 +10,6 @@ from tabs.inv_tab.inv_tab import InvTab
 from tabs.data_tab.data_tab import DataTab
 from tab import Tab, ThreadHandler
 
-
-
 class TabManager:
     def __init__(self, screen):
         self.screen = screen
@@ -24,7 +22,6 @@ class TabManager:
         self.current_sub_tab_index = [0] * len(self.tabs)
         self.previous_sub_tab_index = [0] * len(self.tabs)
 
-        
         self.tab_x_offset = []
         self.glitch_thread = None
         self.render_blur = False
@@ -33,7 +30,8 @@ class TabManager:
         self.tab_text_surface = pygame.Surface((settings.SCREEN_WIDTH, self.tab_font_height))
         self.init_tab_text()
         
-        draw_space = ((settings.TAB_SCREEN_EDGE_LENGTH + self.tab_font_height * 2 + settings.TAB_BOTTOM_MARGIN), settings.BOTTOM_BAR_HEIGHT + settings.BOTTOM_BAR_MARGIN)
+        draw_space = ((settings.TAB_SCREEN_EDGE_LENGTH + self.tab_font_height * 2 + settings.TAB_BOTTOM_MARGIN),
+                      settings.BOTTOM_BAR_HEIGHT + settings.BOTTOM_BAR_MARGIN)
         self.draw_space = pygame.Rect(0, draw_space[0], settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT - draw_space[1] - draw_space[0])
         
         self.tab_base = Tab(self.screen)
@@ -49,7 +47,6 @@ class TabManager:
             4: self.radio_tab,
         }
 
-        
         self.subtab_surfaces = {}  # Pre-rendered text surfaces for all states
         self.subtab_total_widths = {}  # Pre-calculated total width for each tab's subtabs
         self.subtab_offsets = {}  # Pre-calculated positioning data
@@ -57,8 +54,6 @@ class TabManager:
         
         self.tab_thread_handler = ThreadHandler(tab_map, self.current_tab_index)
                 
-        
-
     def play_sfx(self, sound_file: str, volume=settings.VOLUME):
         if settings.SOUND_ON:
             sound = pygame.mixer.Sound(sound_file)
@@ -67,10 +62,8 @@ class TabManager:
             
     def switch_tab_sound(self):
         if settings.SOUND_ON:
-            
             if self.current_tab_index > self.previous_tab_index:
                 self.play_sfx(os.path.join(settings.ROTARY_VERTICAL_1), settings.VOLUME / 5)
-
             else:
                 self.play_sfx(os.path.join(settings.ROTARY_VERTICAL_2), settings.VOLUME / 5)
             if random.randrange(100) < settings.SWITCH_SOUND_CHANCE:
@@ -81,11 +74,8 @@ class TabManager:
         if settings.SOUND_ON:
             if self.current_sub_tab_index > self.previous_sub_tab_index:
                 self.play_sfx(os.path.join(settings.ROTARY_HORIZONTAL_1), settings.VOLUME / 5)
-
             else:
                 self.play_sfx(os.path.join(settings.ROTARY_HORIZONTAL_2), settings.VOLUME / 5)
-
-            
 
     def init_subtab_data(self):
         """Pre-render all possible subtab states and calculate positioning data"""
@@ -122,7 +112,6 @@ class TabManager:
                 self.subtab_offsets[tab_name].append(required_offset)
                 cumulative_width += width + settings.SUBTAB_SPACING
                 
-            
     def init_tab_text(self):
         total_tab_width = sum(self.main_tab_font.size(tab)[0] for tab in self.tabs)
         tab_spacing = (settings.SCREEN_WIDTH - total_tab_width - 2 * settings.TAB_MARGIN) // (len(self.tabs) + 1)
@@ -136,13 +125,10 @@ class TabManager:
     def tab_switch_glitch(self):
         for _ in range(20):
             time = pygame.time.get_ticks()
-
             jump_offset = int(20 * math.sin(time))
-
             self.screen.blit(self.screen, (0, -jump_offset))
             pygame.time.wait(settings.SPEED * 100)
 
-                
     def tab_blur(self):
         screen_copy = self.screen.copy()
         for i in range(1, 18, 6):
@@ -150,10 +136,7 @@ class TabManager:
             blur.set_alpha(180)
             self.screen.blit(blur, (0, 0), special_flags=pygame.BLEND_ADD)        
   
-
-
     def switch_tab(self, direction: bool):
-
         with self.switch_lock:
             # Switch tab index
             self.previous_tab_index = self.current_tab_index
@@ -168,7 +151,6 @@ class TabManager:
         self.tab_thread_handler.update_tab_index(self.current_tab_index)
         self.switch_tab_sound()
 
-
     def switch_sub_tab(self, direction: bool):
         current_main_index = self.current_tab_index
         current_sub_index = self.current_sub_tab_index[current_main_index]
@@ -180,7 +162,6 @@ class TabManager:
         new_index = current_sub_index + (1 if direction else -1)
         new_index = max(0, min(new_index, len(subtabs) - 1))
         self.current_sub_tab_index[current_main_index] = new_index
-        
         
         if new_index != current_sub_index:
             self.switch_sub_tab_sound()
@@ -198,8 +179,6 @@ class TabManager:
                 case _:
                     pass
                 
-    
-
     def scroll_tab(self, direction: bool):
         match self.current_tab_index:
             case 0: # STAT
@@ -216,7 +195,6 @@ class TabManager:
                 pass
 
     def select_item(self):
-        
         match self.current_tab_index:
             case 0: # STAT
                 pass
@@ -230,7 +208,6 @@ class TabManager:
                 self.radio_tab.select_station()
             case _:
                 pass
-
 
     def render_header(self):
         """Draw the tabs on the screen."""
@@ -278,9 +255,8 @@ class TabManager:
         
         # Draw vertical lines at screen edges
         pygame.draw.line(self.screen, settings.PIP_BOY_LIGHT, (0, settings.TAB_SCREEN_EDGE_LENGTH + self.tab_font_height), (0, self.tab_font_height), 1)
-        pygame.draw.line(self.screen, settings.PIP_BOY_LIGHT, (settings.SCREEN_WIDTH - 1,settings.TAB_SCREEN_EDGE_LENGTH + self.tab_font_height), (settings.SCREEN_WIDTH - 1, self.tab_font_height ), 1)
+        pygame.draw.line(self.screen, settings.PIP_BOY_LIGHT, (settings.SCREEN_WIDTH - 1, settings.TAB_SCREEN_EDGE_LENGTH + self.tab_font_height), (settings.SCREEN_WIDTH - 1, self.tab_font_height), 1)
         
-
     def render_sub_tabs(self):
         current_tab_name = self.tabs[self.current_tab_index]
         subtabs = settings.SUBTABS.get(current_tab_name, [])
@@ -309,7 +285,6 @@ class TabManager:
             
             current_x += width + settings.SUBTAB_SPACING
 
-
     def render_tab(self):
         match self.current_tab_index:
             case 0: # STAT
@@ -325,14 +300,44 @@ class TabManager:
             case _:
                 pass
                            
-
+    def crt_glitch_effect(self):
+        """
+        Applies a quick CRT glitch effect to the current screen by randomly shifting horizontal slices 
+        and overlaying some noise. This effect is meant to be occasional and subtle.
+        """
+        # Make a copy of the current screen
+        glitch_surface = self.screen.copy()
+        screen_rect = self.screen.get_rect()
+        
+        # Apply horizontal slice glitches
+        for _ in range(random.randint(1, 15)):
+            slice_height = random.randint(5, 20)
+            y = random.randint(0, screen_rect.height - slice_height)
+            x_offset = random.randint(-20, 20)
+            slice_rect = pygame.Rect(0, y, screen_rect.width, slice_height)
+            self.screen.blit(glitch_surface, (x_offset, y), slice_rect)
+        
+        # Overlay random noise dots/lines
+        for _ in range(random.randint(2, 5)):
+            x = random.randint(0, screen_rect.width)
+            y = random.randint(0, screen_rect.height)
+            
+            pygame.draw.line(
+                self.screen, settings.PIP_BOY_LIGHT,
+                (x, y),
+                (x + random.randint(-2, 2), y + random.randint(-2, 2)),
+                1
+            )
 
     def render(self):
         self.render_header()
         self.render_sub_tabs()
-
         self.render_tab()  
                     
         if self.render_blur:
             self.tab_blur()
             self.render_blur = False
+
+        # Occasionally apply a CRT glitch effect (roughly 1% chance per frame)
+        if random.random() < 0.001:
+            self.crt_glitch_effect()
