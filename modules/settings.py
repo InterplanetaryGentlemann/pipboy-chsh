@@ -1,6 +1,7 @@
 import os
 from data_models import LimbPosition, IconConfig, WeaponItem
 from items import ItemLoader, Inventory
+from secrets import *
 
 #######################################################
 # Load items from the items.ini file
@@ -207,7 +208,6 @@ INTERMISSION_FREQUENCY = 50
 # ------------------
 # Map Tab Settings
 # ------------------
-GOOGLE_MAPS_API_KEY = "AIzaSyA0zWCW9-dRXlu1GSdl6Rq1MPSoFT1pm2Q"
 LOCATION = "Commonwealth"
 SHOW_ALL_MARKERS = True
 MAP_ZOOM_SPEED = 0.2
@@ -227,3 +227,5 @@ EXTRA_RESOLUTION = 2
 
 if os.path.exists("user_config.py"):
     from user_config import *
+    
+
