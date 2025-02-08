@@ -40,6 +40,14 @@ class InputManager:
                         tab_manager.switch_sub_tab(False)
                     case pygame.K_d:
                         tab_manager.switch_sub_tab(True)
+                    case pygame.K_j:
+                        tab_manager.navigate(0)
+                    case pygame.K_i:
+                        tab_manager.navigate(1)
+                    case pygame.K_k:
+                        tab_manager.navigate(2)
+                    case pygame.K_l:
+                        tab_manager.navigate(3)
                     case _:
                         pass
                 

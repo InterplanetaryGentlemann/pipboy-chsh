@@ -15,8 +15,7 @@ TABS = ("STAT", "INV", "DATA", "MAP", "RADIO")
 SUBTABS = {
     "STAT": ("STATUS", "SPECIAL", "PERKS"),
     "INV": ("WEAPONS", "APPAREL", "AID", "MISC", "JUNK", "MODS", "AMMO"),
-    "DATA": ("QUESTS", "WORKSHOPS", "STATS", "SETTINGS"),
-    "MAP": ("LOCAL", "WORLD"),
+    "DATA": ("QUESTS", "WORKSHOPS", "STATS", "SETTINGS")
 }
 
 # ==================================================
@@ -29,6 +28,7 @@ SUBTABS = {
 # ------------------
 SPEED = 1
 GAME_ACCURATE_MODE = False
+YEARS_ADDED = 263
 
 # ------------------
 # Screen Settings
@@ -208,12 +208,20 @@ INTERMISSION_FREQUENCY = 50
 # Map Tab Settings
 # ------------------
 GOOGLE_MAPS_API_KEY = "AIzaSyA0zWCW9-dRXlu1GSdl6Rq1MPSoFT1pm2Q"
+LOCATION = "Commonwealth"
+SHOW_ALL_MARKERS = True
+MAP_ZOOM_SPEED = 0.2
+MAP_MOVE_SPEED = 30
+MIN_MAP_ZOOM = 0.2
+MARKER_SCALE_MIN = 0.5
+MARKER_SCALE_MAX = 1.5
+MAP_EDGES_OFFSET = 5
+
 MAP_TOP_EDGE = 25
 MAP_SIDE_MARGIN = 4
 LONGITUDE = 52.2619
 LATITUDE = 4.9865
 ZOOM = 8
-ZOOM_SPEED = 0.1
 MOVEMENT_SPEED = 15
 EXTRA_RESOLUTION = 2
 

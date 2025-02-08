@@ -9,6 +9,7 @@ from tabs.radio_tab.radio_tab import RadioTab
 from tabs.stat_tab.stat_tab import StatTab
 from tabs.inv_tab.inv_tab import InvTab
 from tabs.data_tab.data_tab import DataTab
+from tabs.map_tab.map_tab import MapTab
 from tab import Tab, ThreadHandler
 
 class TabManager:
@@ -40,16 +41,22 @@ class TabManager:
                       settings.BOTTOM_BAR_HEIGHT + settings.BOTTOM_BAR_MARGIN)
         self.draw_space = pygame.Rect(0, draw_space[0], settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT - draw_space[1] - draw_space[0])
         
+        map_draw_space = ((settings.TAB_SCREEN_EDGE_LENGTH + self.tab_font_height + settings.TAB_BOTTOM_MARGIN),
+                            settings.BOTTOM_BAR_HEIGHT + settings.BOTTOM_BAR_MARGIN)
+        self.map_draw_space = pygame.Rect(settings.MAP_EDGES_OFFSET, map_draw_space[0], settings.SCREEN_WIDTH - settings.MAP_EDGES_OFFSET * 2, settings.SCREEN_HEIGHT - map_draw_space[1] - map_draw_space[0])
+        
         self.tab_base = Tab(self.screen)
         self.radio_tab = RadioTab(self.screen, self.tab_base, self.draw_space)
         self.stat_tab = StatTab(self.screen, self.tab_base, self.draw_space)
         self.inv_tab = InvTab(self.screen, self.tab_base, self.draw_space)
         self.data_tab = DataTab(self.screen, self.tab_base, self.draw_space)
+        self.map_tab = MapTab(self.screen, self.tab_base, self.map_draw_space)
         
         tab_map = {
             0: self.stat_tab,
             1: self.inv_tab,
             2: self.data_tab,
+            3: self.map_tab,
             4: self.radio_tab,
         }
 
@@ -90,17 +97,18 @@ class TabManager:
             self.tab_x_offset.append((self.main_tab_font.size(tab)[0] + tab_spacing) + self.tab_x_offset[i])
 
         # Create header background surface
-        self.header_background = pygame.Surface((settings.SCREEN_WIDTH, self.tab_font_height + 1))
+        self.header_background = pygame.Surface((settings.SCREEN_WIDTH, self.tab_font_height + settings.TAB_SCREEN_EDGE_LENGTH + 1))
         self.header_background.fill(settings.BACKGROUND)
         self.header_background.blit(tab_text_surface, (0, 0))
         pygame.draw.line(self.header_background, settings.PIP_BOY_LIGHT, 
                         (0, self.tab_font_height), (settings.SCREEN_WIDTH, self.tab_font_height), 1)
         pygame.draw.line(self.header_background, settings.PIP_BOY_LIGHT,
-                        (0, self.tab_font_height), (0, self.tab_font_height - settings.TAB_SCREEN_EDGE_LENGTH), 1)
+                        (0, settings.TAB_SCREEN_EDGE_LENGTH + self.tab_font_height), (0, self.tab_font_height), 1)
+        
         pygame.draw.line(self.header_background, settings.PIP_BOY_LIGHT,
-                        (settings.SCREEN_WIDTH-1, self.tab_font_height), 
-                        (settings.SCREEN_WIDTH-1, self.tab_font_height - settings.TAB_SCREEN_EDGE_LENGTH), 1)
-
+                        (settings.SCREEN_WIDTH-1, self.tab_font_height + settings.TAB_SCREEN_EDGE_LENGTH), 
+                        (settings.SCREEN_WIDTH-1, self.tab_font_height ), 1)
+        
         # Create tab highlight surfaces
         for i, tab in enumerate(self.tabs):
             surface = pygame.Surface((settings.SCREEN_WIDTH, self.tab_font_height + 1), pygame.SRCALPHA)
@@ -248,7 +256,7 @@ class TabManager:
             case 2: # DATA
                 self.data_tab.scroll(direction)
             case 3: # MAP
-                pass
+                self.map_tab.scroll(direction)
             case 4: # RADIO
                 self.radio_tab.scroll(direction)
             case _:
@@ -266,6 +274,22 @@ class TabManager:
                 pass
             case 4: # RADIO
                 self.radio_tab.select_station()
+            case _:
+                pass
+            
+            
+    def navigate(self, direction: int):
+        match self.current_tab_index:
+            case 0: # STAT
+                pass
+            case 1: # INV
+                pass
+            case 2: # DATA
+                pass
+            case 3: # MAP
+                self.map_tab.navigate(direction)
+            case 4: # RADIO
+                pass
             case _:
                 pass
 
@@ -296,7 +320,7 @@ class TabManager:
             case 2: # DATA
                 self.data_tab.render()
             case 3: # MAP
-                pass
+                self.map_tab.render()
             case 4: # RADIO
                 self.radio_tab.render()
             case _:

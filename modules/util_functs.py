@@ -1,3 +1,4 @@
+import datetime
 import pygame
 import settings
 import os
@@ -73,5 +74,28 @@ class Utils:
             sound = pygame.mixer.Sound(sound_file)
             sound.set_volume(volume)
             sound.play(start) if not channel else pygame.mixer.Channel(channel).play(sound)
+            
+            
+    @staticmethod
+    def lerp(start, end, start_range, end_range, value):
+        """
+        Linear interpolation between two values.
+        """
+        return start + (end - start) * ((value - start_range) / (end_range - start_range))
+    
+    
+    @staticmethod
+    def get_date():
+        now = datetime.datetime.now()
+        current_date = f"{now.day}.{now.month}"
+        current_year = str(int(now.strftime("%Y")) + settings.YEARS_ADDED)
+        date = f"{current_date}.{current_year}"
+        return date
 
+
+    @staticmethod
+    def get_time():
+        now = datetime.datetime.now()    
+        current_time = now.strftime("%I:%M%p")
+        return current_time
         

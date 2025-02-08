@@ -40,6 +40,15 @@ DAMAGE_TYPES_ICONS = {
 
 ITEMS_BASE_FOLDER = "../images/inventory/items"
 
+COMMONWEALTH_MAP = "../images/worldmap/CompanionWorldMap.png"
+COMMONWEALTH_MAP_MARKERS = "../images/worldmap/WorldMapMarkers.png"
+
+MARKER_IMAGES = {
+    'quest': 'quest_marker.png',
+    'player': '../images/svgs/MapMarkers/icon_94.svg',
+    'settlement': 'settlement_marker.png',
+    'default': 'default_marker.png',
+}
 
 
 

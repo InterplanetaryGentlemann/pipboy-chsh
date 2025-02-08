@@ -107,6 +107,19 @@ class Tab:
         # Store the surface in the dictionary
         self.tab_footers[key] = footer_surface
         
+        
+    # Update footer and only the part of the footer that needs to be updated    
+    def update_footer(self, object, text_surface, destination=(0, 0)):
+        # clear the nescary part of the footer
+        self.tab_footers[object].fill(settings.PIP_BOY_DARK, (destination[0], destination[1], text_surface.get_width(), text_surface.get_height()))
+        
+        # Blit the updated text to the footer
+        self.tab_footers[object].blit(
+            text_surface,
+            (destination)
+        )
+
+        
     def render_footer(self, object):
         # Blit the pre-rendered footer to the screen
         self.screen.blit(
