@@ -1,3 +1,4 @@
+
 # Fonts
 MAIN_FONT_PATH = "../fonts/RobotoCondensed-Bold.ttf"
 ROBOTO_BOLD_PATH = "../fonts/Roboto-Bold.ttf"
@@ -43,8 +44,7 @@ ITEMS_BASE_FOLDER = "../images/inventory/items"
 COMMONWEALTH_MAP = "../images/worldmap/CompanionWorldMap.png"
 COMMONWEALTH_MAP_MARKERS = "../images/worldmap/WorldMapMarkers.png"
 
-MAP_ICONS_BASE_FOLDER = "../images/svgs/MapMarkers"
-
+MAP_ICONS_BASE_FOLDER = "../images/svgs/map_markers_processed"
 
 
 
@@ -73,9 +73,9 @@ MAP_CACHE = "../cache/maps"
 MAP_PLACES_CACHE = "../cache/places"
 
 
-def get_static_map_url(size, apikey, lon, lat, zoom):
+def get_static_map_url(size, logo_size, apikey, lon, lat, zoom):
     return (
-        f"https://maps.geoapify.com/v1/staticmap?style=osm-bright&width={size}&height={size}&center=lonlat:{lon},{lat}&zoom={zoom}&"
+        f"https://maps.geoapify.com/v1/staticmap?style=osm-bright&width={size}&height={size + logo_size}&center=lonlat:{lon},{lat}&zoom={zoom}&scale=1&"
         f"styleCustomization=background:%23585858|landcover-glacier:none|landuse-residential:none|landuse-commercial:none|landuse-industrial:none|"
         f"park:none|park-outline:none|landuse-cemetery:none|landuse-hospital:none|landuse-school:none|landuse-railway:none|landcover-wood:none|"
         f"landcover-grass:none|landcover-grass-park:none|waterway_tunnel:none|waterway-other:none|waterway-stream-canal:none|waterway-river:none|"
@@ -113,10 +113,6 @@ def get_places_map_url(radius, lat, lon):
         node["water"="lake"](around:{radius},{lat},{lon});
         way["water"="lake"](around:{radius},{lat},{lon});
         relation["water"="lake"](around:{radius},{lat},{lon});
-        
-        node["natural"="water"](around:{radius},{lat},{lon});
-        way["natural"="water"](around:{radius},{lat},{lon});
-        relation["natural"="water"](around:{radius},{lat},{lon});
         
         node["historic"="ruins"](around:{radius},{lat},{lon});
         way["historic"="ruins"](around:{radius},{lat},{lon});

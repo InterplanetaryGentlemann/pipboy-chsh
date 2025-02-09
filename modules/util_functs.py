@@ -60,11 +60,12 @@ class Utils:
         """
         try:
             images = {
-                f.strip(".svg"): Utils.tint_image(
+                f: Utils.tint_image(
                     pygame.image.load_sized_svg(os.path.join(folder, f), (scale, scale)).convert_alpha(),
                     tint
                 ) for f in os.listdir(folder) if f.endswith(".svg")
             }
+            images= {k.replace(".svg", ""): v for k, v in images.items()}
             return images
         except FileNotFoundError:
             return {}
@@ -116,4 +117,3 @@ class Utils:
         now = datetime.datetime.now()    
         current_time = now.strftime("%I:%M%p")
         return current_time
-        

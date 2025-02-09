@@ -3,38 +3,35 @@ import json
 import math
 import os
 import random
+from threading import Lock
 import requests
 import pygame
+from typing import Tuple, List, Dict, Optional
+from pygame.math import Vector2
+from PIL import Image
+
 import settings
 from util_functs import Utils
-from PIL import Image
+
 
 
 
 class BaseMap:
-    def __init__(self, screen: pygame.Surface, draw_space: pygame.Rect, map_image: pygame.Surface, initial_zoom: float = 0.5):
-        """
-        Initialize the base map handler.
-        
-        :param screen: Pygame display surface.
-        :param draw_space: Rect defining the map's drawing area.
-        :param map_image: Surface containing the map image.
-        :param initial_zoom: Initial zoom factor (clamped between min and max zoom).
-        """
+    def __init__(self, screen: pygame.Surface, draw_space: pygame.Rect, 
+                 map_image: pygame.Surface):
         self.screen = screen
         self.draw_space = draw_space
         self.map_image = map_image
-        self.map_surface = self.map_image.copy()
+        self.map_surface = map_image.copy()
 
-        # Calculate zoom constraints and set initial zoom
+        # Zoom configuration
         self.min_zoom = self._calculate_min_zoom()
         self.max_zoom = settings.MIN_MAP_ZOOM
-        self.map_zoom = settings.INITIAL_MAP_ZOOM
-        
-        self.zoomed_map_surface = self._update_zoomed_surface()
-        self.map_offset = self._calculate_initial_offset()
+        self.map_zoom = max(min(settings.INITIAL_MAP_ZOOM, self.max_zoom), self.min_zoom)
 
-        # Define movement directions (right, down, up, left)
+        # Navigation state
+        self.zoomed_map_surface = self._update_zoomed_surface()
+        self.map_offset = Vector2(self._calculate_initial_offset())
         self.directions = [
             (settings.MAP_MOVE_SPEED, 0),   # Right
             (0, settings.MAP_MOVE_SPEED),   # Down
@@ -42,64 +39,60 @@ class BaseMap:
             (-settings.MAP_MOVE_SPEED, 0)   # Left
         ]
 
-    def _calculate_initial_offset(self) -> tuple[float, float]:
+    def _calculate_initial_offset(self) -> Vector2:
         """Calculate initial offset to center the map."""
-        return (
+        return Vector2(
             (self.zoomed_map_surface.get_width() - self.draw_space.width) / 2,
             (self.zoomed_map_surface.get_height() - self.draw_space.height) / 2
         )
 
     def _update_zoomed_surface(self) -> pygame.Surface:
-        """Update the zoomed surface based on current zoom level."""
-        new_size = (int(self.map_surface.get_width() * self.map_zoom),
-                    int(self.map_surface.get_height() * self.map_zoom))
-        return pygame.transform.smoothscale(self.map_surface, new_size)
+        """Update zoomed surface using smooth scaling."""
+        new_size = Vector2(self.map_surface.get_size()) * self.map_zoom
+        return pygame.transform.smoothscale(self.map_surface, new_size.xy)
 
     def _calculate_min_zoom(self) -> float:
         """Calculate minimum zoom to fit image within draw space."""
-        img_w, img_h = self.map_surface.get_size()
-        draw_w, draw_h = self.draw_space.size
-        return max(draw_w / img_w, draw_h / img_h)
-
+        img_size = Vector2(self.map_surface.get_size())
+        draw_size = Vector2(self.draw_space.size)
+        return max(draw_size.x / img_size.x, draw_size.y / img_size.y)
 
     def clamp_offset(self):
-        """Ensure map stays within bounds during panning."""
-        zoomed_w, zoomed_h = self.zoomed_map_surface.get_size()
-        draw_w, draw_h = self.draw_space.size
+        """Keep map offset within valid bounds."""
+        zoomed_size = Vector2(self.zoomed_map_surface.get_size())
+        draw_size = Vector2(self.draw_space.size)
+        max_offset = zoomed_size - draw_size
 
-        # Horizontal clamping
-        max_x = max(zoomed_w - draw_w, 0)
-        new_x = max(0, min(self.map_offset[0], max_x)) if zoomed_w > draw_w else (zoomed_w - draw_w) / 2
+        # Ensure map_offset is a Vector2
+        if not isinstance(self.map_offset, Vector2):
+            self.map_offset = Vector2(self.map_offset)
 
-        # Vertical clamping
-        max_y = max(zoomed_h - draw_h, 0)
-        new_y = max(0, min(self.map_offset[1], max_y)) if zoomed_h > draw_h else (zoomed_h - draw_h) / 2
-        
-
-        self.map_offset = (new_x, new_y)
+        # Clamp the offset
+        for axis in [0, 1]:  # 0 for x, 1 for y
+            if zoomed_size[axis] < draw_size[axis]:
+                self.map_offset[axis] = (zoomed_size[axis] - draw_size[axis]) / 2
+            else:
+                self.map_offset[axis] = max(0, min(self.map_offset[axis], max_offset[axis]))
 
     def zoom(self, zoom_in: bool):
         """Zoom while maintaining view center."""
         old_zoom = self.map_zoom
         zoom_step = old_zoom * settings.MAP_ZOOM_SPEED
-        new_zoom = old_zoom + (zoom_step if zoom_in else -zoom_step)
+        new_zoom = old_zoom + zoom_step if zoom_in else old_zoom - zoom_step
         new_zoom = max(self.min_zoom, min(self.max_zoom, new_zoom))
 
-        if new_zoom != old_zoom:
-            # Calculate view center in original coordinates
-            view_center = (self.draw_space.width / 2, self.draw_space.height / 2)
-            orig_x = (self.map_offset[0] + view_center[0]) / old_zoom
-            orig_y = (self.map_offset[1] + view_center[1]) / old_zoom
+        if new_zoom == old_zoom:
+            return
 
-            # Update zoom and recalculate offset
-            self.map_zoom = new_zoom
-            self.zoomed_map_surface = self._update_zoomed_surface()
-            new_offset = (
-                orig_x * new_zoom - view_center[0],
-                orig_y * new_zoom - view_center[1]
-            )
-            self.map_offset = new_offset
-            self.clamp_offset()
+        # Calculate original center position
+        view_center = Vector2(self.draw_space.center) - Vector2(self.draw_space.topleft)
+        orig_center = (Vector2(self.map_offset) + view_center) / old_zoom
+
+        # Update zoom state
+        self.map_zoom = new_zoom
+        self.zoomed_map_surface = self._update_zoomed_surface()
+        self.map_offset = orig_center * new_zoom - view_center
+        self.clamp_offset()
 
     def navigate(self, direction: int):
         """
@@ -107,9 +100,12 @@ class BaseMap:
         :param direction: 0: right, 1: down, 2: up, 3: left.
         """
         if 0 <= direction < 4:
+            if not isinstance(self.map_offset, Vector2):
+                self.map_offset = Vector2(self.map_offset)
             dx, dy = self.directions[direction]
-            self.map_offset = (self.map_offset[0] + dx, self.map_offset[1] + dy)
+            self.map_offset += Vector2(dx, dy)
             self.clamp_offset()
+
 
     def render(self):
         """Draw the visible portion of the map."""
@@ -119,250 +115,297 @@ class BaseMap:
 
 
 class WorldMap(BaseMap):
-    """Custom world map with markers toggle."""
-    def __init__(self, screen: pygame.Surface, draw_space: pygame.Rect, initial_zoom: float = 0.5):
+    """World map with toggleable markers."""
+    def __init__(self, screen: pygame.Surface, draw_space: pygame.Rect):
         map_path = (settings.COMMONWEALTH_MAP_MARKERS if settings.SHOW_ALL_MARKERS 
                     else settings.COMMONWEALTH_MAP)
-        map_image = pygame.image.load(map_path).convert_alpha()
-        map_image = Utils.tint_image(map_image)
-        super().__init__(screen, draw_space, map_image, initial_zoom)
+        map_image = Utils.tint_image(pygame.image.load(map_path).convert_alpha())
+        super().__init__(screen, draw_space, map_image)
 
 
 class RealMap(BaseMap):
-    """Dynamic real-world map using OSM static map and Overpass API data."""
-    _cache  = {}
-    _places_cache = {}
+    """Dynamic real-world map using OSM and Overpass API."""
+    _cache: Dict[tuple, pygame.Surface] = {}
+    _places_cache: Dict[str, list] = {}
     
-    type_limits = {
-        "water": 5,  # Limit water locations to 5
-        "military": 3,
-        "ruins": 4,
-        "industrial": 4,
-        "city": 10,
-        "village": 8,
-        "default": 6
-    }
 
 
-    def __init__(self, screen: pygame.Surface, draw_space: pygame.Rect, api_zoom: int = 13, initial_zoom: float = 0.5):
-        # For OSM, no API key is needed.
+    def __init__(self, screen: pygame.Surface, draw_space: pygame.Rect, 
+                 api_zoom: int = 13):
         self.lat, self.lon = settings.LATITUDE, settings.LONGITUDE
         self.api_zoom = api_zoom
         self.draw_space = draw_space
-
-        # Load marker icons (your utility remains the same)
         self.icons = Utils.load_svgs_dict(settings.MAP_ICONS_BASE_FOLDER, settings.MAP_ICON_SIZE)
-        # Fetch map image from OSM static map service
+
+        self._cache_lock = Lock()
+        self._places_cache_lock = Lock()
+        # Initialize map components
         self.map_image = self._fetch_map_image()
-        # Fetch POI data for the entire area using Overpass API (one call over a bounding box)
-        self.places = self._fetch_places(self.lat, self.lon)
+        self.places = self._fetch_places()
         self.rendered_map = self._draw_markers()
-
-        super().__init__(screen, draw_space, self.rendered_map, initial_zoom)
-
-    def get_icon_for_place(self, types):
-        for typ in types:
-            # Print type for debugging if desired
-            print(typ)
-            if typ in self.icons and typ != "default":
-                return self.icons[typ]
-        return self.icons["default"]
-
-    def lat_lon_to_pixel(self, lat, lon, zoom):
-        """Convert lat/lon to pixel coordinates using the same tile scheme as OSM (similar to Google's)."""
-        lat_rad = math.radians(lat)
-        n = 2.0 ** zoom
-        x = (lon + 180.0) / 360.0 * n * 256  # 256 pixels per tile
-        y = (1.0 - math.log(math.tan(lat_rad) + 1.0 / math.cos(lat_rad)) / math.pi) / 2.0 * n * 256
-        return x, y
-
-    def _zoom_to_radius(self, zoom, latitude):
-        """
-        Convert a Geoapify (OSM) zoom level to an Overpass API radius in meters.
-
-        :param zoom: Zoom level (0-20).
-        :param latitude: Latitude in degrees.
-        :return: Approximate radius in meters.
-        """
-        meters_per_pixel = (156543.03 * math.cos(math.radians(latitude))) / (2 ** zoom)
-        radius = (settings.MAP_SIZE * meters_per_pixel) / 2  # Use half a tile width
-        return int(radius)  # Overpass API expects an integer
-
-
-    def _fetch_places(self, lat, lon):
-        """
-        Uses the Overpass API to fetch points of interest (cities, towns, villages, lakes, ruins,
-        industrial, and military features) over a given radius. After fetching, it filters the results
-        to ensure a minimum distance between nodes.
-        """
         
-        radius = self._zoom_to_radius(self.api_zoom, lat)
-        cache_key = f"{lat:.6f}_{lon:.6f}_{self.api_zoom}_{radius}"
-        places_cache = f"{settings.MAP_PLACES_CACHE}.{cache_key}.json"
-        
-        if cache_key in self._places_cache:
-            return self._places_cache[cache_key]
-
-        if os.path.exists(places_cache):
-            with open(places_cache, "r") as f:
-                try:
-                    cached_data = json.load(f)
-                    if isinstance(cached_data, dict) and cache_key in cached_data:
-                        return cached_data[cache_key]  # Return the cached places
-                except json.JSONDecodeError:
-                    print("Error reading cached places data.")
-
-
-        # Build the Overpass QL query.
-        query = settings.get_places_map_url(radius, lat, lon)
-
-        # Fetch data from the Overpass API
-        try:
-            response = requests.post(settings.OVERPASS_URL, data={'data': query})
-            response.raise_for_status()
-        except requests.RequestException as e:
-            print(f"Error fetching Overpass data: {e}")
-            return []
-
-        data = response.json()
-        elements = data.get("elements", [])
-
-        # Helper function to extract a list of 'types' from an element's tags.
-        def get_types(tags):
-            types = []
-            if "place" in tags:
-                types.append(tags["place"])
-            if "water" in tags:
-                types.append(tags["water"])
-            if tags.get("natural") == "water":
-                types.append("water")
-            if "historic" in tags:
-                types.append(tags["historic"])
-            if "landuse" in tags:
-                types.append(tags["landuse"])
-            if "military" in tags:
-                types.append("military")
-            if not types:
-                types.append("default")
-            return types
-
-        # Process the raw elements into a list of places with lat, lon, and types.
-        raw_places = []
-        for element in elements:
-            if "lat" in element and "lon" in element:
-                lat_val = element["lat"]
-                lon_val = element["lon"]
-            elif "center" in element:
-                lat_val = element["center"]["lat"]
-                lon_val = element["center"]["lon"]
-            else:
-                continue
-
-            tags = element.get("tags", {})
-            types = get_types(tags)
-            raw_places.append({"lat": lat_val, "lon": lon_val, "types": types})
-
-        # Filter out nodes that are too close together.
-
-        def haversine_distance(lat1, lon1, lat2, lon2):
-            R = 6371000  # Earth radius in meters
-            phi1 = math.radians(lat1)
-            phi2 = math.radians(lat2)
-            delta_phi = math.radians(lat2 - lat1)
-            delta_lambda = math.radians(lon2 - lon1)
-            a = math.sin(delta_phi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2) ** 2
-            c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-            return R * c
-
-        random.shuffle(raw_places)
-        type_counts = {key: 0 for key in self.type_limits}
-        selected_places = []
-        for place in raw_places:
-            too_close = False
-            random_factor = random.uniform(0.4, 2.4)  # Randomly vary distance by ±20%
-            min_distance = settings.MAP_MIN_NODE_DISTANCE * random_factor  # Apply randomness
-            place_types = place["types"]
-            dominant_type = next((t for t in place_types if t in self.type_limits), "default")
-
-            # Check if the type has reached its limit
-            if type_counts[dominant_type] >= self.type_limits[dominant_type]:
-                continue           
-            for sel in selected_places:
-                if haversine_distance(place["lat"], place["lon"], sel["lat"], sel["lon"]) < min_distance:
-                    too_close = True
-                    break
-            
-            if not too_close:
-                selected_places.append(place)
-                type_counts[dominant_type] += 1
-                    
-        if os.path.exists(places_cache):
-            with open(places_cache, "r") as f:
-                cache_data = json.load(f)
-        else:
-            cache_data = {}
-
-        cache_data[cache_key] = selected_places
-        
-        json_data = json.dumps(cache_data, indent=4)
-        
-        with open(places_cache, "w") as f:
-            f.write(json_data)
-        return selected_places
-
-    def _draw_markers(self):
-        """Place markers on the map image based on the fetched POI data."""
-        map_surface = self.map_image.copy()
-        map_width, map_height = map_surface.get_size()
-        center_pixel = self.lat_lon_to_pixel(self.lat, self.lon, self.api_zoom)
-
-        for place in self.places:
-            print(place)
-            icon = self.get_icon_for_place(place.get("types", []))
-            icon_w, icon_h = icon.get_size()
-            marker_pixel = self.lat_lon_to_pixel(place["lat"], place["lon"], self.api_zoom)
-            screen_x = (marker_pixel[0] - center_pixel[0]) + (map_width // 2) - icon_w // 2
-            screen_y = (marker_pixel[1] - center_pixel[1]) + (map_height // 2) - icon_h // 2
-
-            if 0 <= screen_x <= map_width - icon_w and 0 <= screen_y <= map_height - icon_h:
-                map_surface.blit(icon, (screen_x, screen_y))
-        return map_surface
+        super().__init__(screen, draw_space, self.rendered_map)
 
     def _fetch_map_image(self) -> pygame.Surface:
-        """
-        Retrieves the map image from an OSM static map service.
-        This version caches the image on disk to save bandwidth.
-        """
-        size = settings.MAP_SIZE
-        cache_key = (round(self.lat, 6), round(self.lon, 6), self.api_zoom, size)
+        """Retrieve map image with caching."""
+        cache_key = (round(self.lat, 6), round(self.lon, 6), self.api_zoom, settings.MAP_SIZE)
         
         if cached := self._cache.get(cache_key):
             return cached.copy()
 
+        # Try disk cache
         os.makedirs(settings.MAP_CACHE, exist_ok=True)
-        filename = f"{self.lat:.6f}_{self.lon:.6f}_{self.api_zoom}_{size}.png"
+        filename = f"{self.lat:.6f}_{self.lon:.6f}_{self.api_zoom}_{settings.MAP_SIZE}.png"
         cache_path = os.path.join(settings.MAP_CACHE, filename)
 
         if os.path.exists(cache_path):
             img = pygame.image.load(cache_path).convert()
-            self._cache[cache_key] = img
+            with self._cache_lock:
+                self._cache[cache_key] = img
             return Utils.tint_image(img)
 
-
-        url = settings.get_static_map_url(size, settings.GEOAPIFY_API_KEY, self.lon, self.lat, self.api_zoom)
-        print(f"Fetching map image from {url}")
-        response = requests.get(url)
-        if response.status_code != 200:
-            raise ConnectionError(f"OSM Static Map API failed: {response.status_code}")
+        # Fetch new image
+        url = settings.get_static_map_url(settings.MAP_SIZE, settings.EXTRA_MAP_SIZE, settings.GEOAPIFY_API_KEY,
+                                         self.lon, self.lat, self.api_zoom)
+        
+        try:
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+        except requests.RequestException as e:
+            raise ConnectionError(f"Map API failed: {e}") from e
 
         img = pygame.image.load(io.BytesIO(response.content)).convert()
-        original_width = img.get_width()
-        original_height = img.get_height()
-        min_size = min(original_width, original_height)
-        cropped_img = pygame.Surface((min_size, min_size))
-        cropped_img.blit(img, (0, 0), (0, 0, min_size, min_size))
-        cropped_img = cropped_img.convert()
-
+        width, height = img.get_size()
+        min_dimension = min(width, height)
+        # Calculate the top-left coordinates for a centered crop.
+        x = (width - min_dimension) // 2
+        y = (height - min_dimension) // 2
+        cropped_img = pygame.Surface((min_dimension, min_dimension)).convert()
+        cropped_img.blit(img, (0, 0), (x, y, min_dimension, min_dimension))
+        
         pygame.image.save(cropped_img, cache_path)
-        self._cache[cache_key] = cropped_img
+        with self._cache_lock:
+            self._cache[cache_key] = cropped_img
         return Utils.tint_image(cropped_img)
+
+    def _fetch_places(self) -> List[dict]:
+        """Fetch and filter POI data with caching."""
+        radius = self._calculate_search_radius()
+        cache_key = f"{self.lat:.6f}_{self.lon:.6f}_{self.api_zoom}_{radius}"
+        cache_file = f"{settings.MAP_PLACES_CACHE}.{cache_key}.json"
+
+        if cached := self._places_cache.get(cache_key):
+            return cached
+
+        # Try disk cache
+        if os.path.exists(cache_file):
+            with open(cache_file, "r") as f:
+                data = json.load(f)
+                filtered_places = data.get(cache_key, [])
+                with self._places_cache_lock:
+                    self._places_cache[cache_key] = filtered_places  # Update in-memory cache
+                return filtered_places
+
+
+        # Fetch new data
+        query = settings.get_places_map_url(radius, self.lat, self.lon)
+        
+        try:
+            response = requests.post(settings.OVERPASS_URL, data={'data': query}, timeout=15)
+            response.raise_for_status()
+        except requests.RequestException as e:
+            return []
+
+        raw_places = self._process_response_data(response.json())
+        filtered_places = self._filter_places(raw_places)
+        # filtered_places = raw_places
+        
+        # Update cache
+
+        with open(cache_file, "w") as f:
+            json.dump({cache_key: filtered_places}, f, indent=2)
+
+        with self._places_cache_lock:
+            self._places_cache[cache_key] = filtered_places
+
+        return filtered_places
+
+    def _process_response_data(self, data: dict) -> List[dict]:
+        """Process Overpass API response into place data."""
+        places = []
+        for element in data.get("elements", []):
+            if coords := self._extract_coordinates(element):
+                types = self._extract_types(element.get("tags", {}))
+                places.append({"lat": coords[0], "lon": coords[1], "types": types})
+        return places
+
+    def _extract_coordinates(self, element: dict) -> Optional[Tuple[float, float]]:
+        """Extract coordinates from API element."""
+        if "lat" in element and "lon" in element:
+            return element["lat"], element["lon"]
+        if "center" in element:
+            return element["center"]["lat"], element["center"]["lon"]
+        return None
+
+    def _extract_types(self, tags: dict) -> List[str]:
+        """Extract place types from OSM tags."""
+        # Get the valid types from MAP_NODE_TYPE_LIMITS (excluding the fallback "default")
+        valid_types = set(settings.MAP_NODE_TYPE_LIMITS.keys())
+        types_found = set()
+        
+        # For these OSM tag keys, check if the tag's value is one of our valid types.
+        for osm_key in ["place", "water", "historic", "landuse", "military"]:
+            tag_value = tags.get(osm_key)
+            if tag_value in valid_types:
+                types_found.add(tag_value)
+        
+        
+        sorted_types = sorted(
+            types_found, 
+            key=lambda t: settings.MAP_TYPE_PRIORITY.index(t) if t in settings.MAP_TYPE_PRIORITY else len(settings.MAP_TYPE_PRIORITY)
+        )
+        return sorted_types
+
+    def _filter_places(self, raw_places: List[dict]) -> List[dict]:
+        """Filter places with priority-based selection when conflicts occur,
+        and remove any markers that would be drawn outside the visible map."""
+        # Sort places by priority (highest first)
+        sorted_places = sorted(raw_places, 
+            key=lambda x: self._get_type_priority(x["types"]), 
+            reverse=False
+        )
+        # # shuffel the places of each type
+        # for place_type in settings.MAP_NODE_TYPE_LIMITS:
+        #     type_places = [p for p in sorted_places if place_type in p["types"]]
+        #     random.shuffle(type_places)
+        #     sorted_places = [p for p in sorted_places if p not in type_places] + type_places
+        
+        # Setup values for bounds checking.
+        # Use the fetched map image as the reference (the full image that markers are drawn on).
+        map_surface = self.map_image
+        map_size = Vector2(map_surface.get_size())
+        # Compute the pixel coordinates for the center (the current focal point of the map)
+        center_pixel = Vector2(self.lat_lon_to_pixel(self.lat, self.lon, self.api_zoom))
+        map_center = map_size / 2
+
+        filtered = []
+        type_counts = {k: 0 for k in settings.MAP_NODE_TYPE_LIMITS}
+
+        for place in sorted_places:
+            try:
+                place_type = place["types"][0]
+            except IndexError:
+                continue
+            
+            # Enforce the type limit.
+            if type_counts[place_type] >= settings.MAP_NODE_TYPE_LIMITS[place_type]:
+                continue
+                
+            # Skip if the place is too close to an already-selected higher priority marker.
+            # if self._is_too_close_to_higher_priority(place, filtered):
+            #     continue
+
+            # Determine if the marker for this place would be drawn within the map bounds.
+            icon = self._get_icon(place["types"])
+            if icon is None:
+                continue  # or you might choose to include it if you want a fallback behavior
+
+            icon_size = Vector2(icon.get_size())
+            # Convert the place's geographic coordinates to a pixel coordinate on the map.
+            marker_pos = Vector2(self.lat_lon_to_pixel(place["lat"], place["lon"], self.api_zoom))
+            # Calculate where the icon would be drawn relative to the map image.
+            screen_pos = marker_pos - center_pixel + map_center - icon_size / 2
+
+            # Only include the place if its marker is fully within the map surface.
+            if not (0 <= screen_pos.x <= map_size.x - icon_size.x and
+                    0 <= screen_pos.y <= map_size.y - icon_size.y):
+                continue
+                
+            # Passed all checks: add this place.
+            filtered.append(place)
+            type_counts[place_type] += 1
+
+        return filtered
+
+    def _get_type_priority(self, types: List[str]) -> int:
+        """Get the highest priority score from a place's types."""
+        for t in settings.MAP_TYPE_PRIORITY:
+            if t in types:
+                return len(settings.MAP_TYPE_PRIORITY) - settings.MAP_TYPE_PRIORITY.index(t)
+        return 0  # default priority
+
+
+
+    def _haversine(self, coords1: Tuple[float, float], coords2: Tuple[float, float]) -> float:
+            R = 6371000  # Earth radius in meters
+            phi1 = math.radians(coords1[0])
+            phi2 = math.radians(coords2[0])
+            delta_phi = math.radians(coords2[0] - coords1[0])
+            delta_lambda = math.radians(coords2[1] - coords1[1])
+            a = math.sin(delta_phi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2) ** 2
+            c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+            return R * c
+
+    def _is_too_close_to_higher_priority(self, new_place: dict, existing_places: List[dict]) -> bool:
+        """Check if place is too close to existing places of equal or higher priority."""
+        new_priority = self._get_type_priority(new_place["types"])
+        new_coords = (new_place["lat"], new_place["lon"])
+        
+        for existing in existing_places:
+            existing_priority = self._get_type_priority(existing["types"])
+            
+            # Only compare with existing places of equal or higher priority
+            if existing_priority >= new_priority:
+                distance = self._haversine(new_coords, (existing["lat"], existing["lon"]))
+                min_distance = settings.MAP_MIN_NODE_DISTANCE * random.uniform(0.5, 1.5)
+                
+                if distance < min_distance:
+                    return True
+                    
+        return False
+
+    def _calculate_search_radius(self) -> int:
+        """Convert zoom level to search radius in meters."""
+        meters_per_pixel = (156543.03 * math.cos(math.radians(self.lat))) / (2 ** self.api_zoom)
+        return int((settings.MAP_SIZE * meters_per_pixel * math.sqrt(2)) / 2)
+
+
+    def _draw_markers(self) -> pygame.Surface:
+        """Draw markers on the map surface."""
+        map_surface = self.map_image.copy()
+        center_pixel = self.lat_lon_to_pixel(self.lat, self.lon, self.api_zoom)
+        map_center = Vector2(map_surface.get_size()) / 2
+        map_size = Vector2(map_surface.get_size())
+
+        for place in self.places:
+            icon = self._get_icon(place["types"])
+            if icon is None:
+                continue
+            icon_size = Vector2(icon.get_size())
+            marker_pos = Vector2(self.lat_lon_to_pixel(place["lat"], place["lon"], self.api_zoom))
+            screen_pos = marker_pos - Vector2(center_pixel) + map_center - icon_size / 2
+
+            # Check if the marker is within the map bounds
+            if (0 <= screen_pos.x <= map_size.x - icon_size.x and
+                0 <= screen_pos.y <= map_size.y - icon_size.y):
+                map_surface.blit(icon, screen_pos.xy)
+
+        return map_surface
+
+    @staticmethod
+    def lat_lon_to_pixel(lat: float, lon: float, zoom: int) -> Tuple[float, float]:
+        """Convert geographic coordinates to pixel coordinates with scale factor."""
+        lat_rad = math.radians(lat)
+        n = 2 ** zoom
+        tile_size = settings.MAP_TILE_SIZE
+        x = (lon + 180) / 360 * n * tile_size
+        y = (1 - math.log(math.tan(lat_rad) + 1 / math.cos(lat_rad)) / math.pi) / 2 * n * tile_size
+        return x, y
+
+    def _get_icon(self, types: List[str]) -> pygame.Surface:
+        for t in types:
+            if t in self.icons:
+                print(t)
+                return self.icons[t]
+        # Return a default icon if available
+        return self.icons.get("default", None)

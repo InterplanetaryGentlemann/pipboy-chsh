@@ -33,7 +33,7 @@ class MapTab:
         # Initialize subtabs
         # self.world_map_subtab = WorldMap(self.screen, self.draw_space, settings.COMMONWEALTH_MAP)
         
-        self.world_map_subtab = RealMap(self.screen, self.draw_space, api_zoom=settings.MAP_ZOOM)
+        self.world_map_subtab = RealMap(self.screen, self.draw_space, settings.MAP_ZOOM)
  
         sub_tab_map = {
             0: self.world_map_subtab

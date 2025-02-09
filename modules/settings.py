@@ -217,18 +217,32 @@ INITIAL_MAP_ZOOM = 1.5
 MARKER_SCALE_MIN = 0.5
 MARKER_SCALE_MAX = 1.5
 MAP_EDGES_OFFSET = 5
-MAP_SIZE = 620
+MAP_SIZE = 1024
+EXTRA_MAP_SIZE = 100
 LOGO_SIZE = 7.3
 MAP_ZOOM = 12
 MAP_ICON_SIZE = 30
 MAP_PLACES_ZOOM = 20000
-MAP_MIN_NODE_DISTANCE = 1000
+MAP_MIN_NODE_DISTANCE = 1000000
 
-MAP_TOP_EDGE = 25
-MAP_SIDE_MARGIN = 4
-ZOOM = 8
-MOVEMENT_SPEED = 15
-EXTRA_RESOLUTION = 2
+MAP_NODE_TYPE_LIMITS = {
+    "city": 20,
+    "village": 15,
+    "town": 10,
+    "hamlet": 8,
+    "ruins": 20,
+    "shelter": 4,
+    "bunker": 10,
+    "lake": 15,
+    "industrial": 8,
+}
+
+
+MAP_TYPE_PRIORITY = list(MAP_NODE_TYPE_LIMITS.keys())
+
+
+MAP_TILE_SIZE = 512
+
 
 if os.path.exists("user_config.py"):
     from user_config import *
