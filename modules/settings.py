@@ -1,7 +1,7 @@
 import os
 from data_models import LimbPosition, IconConfig, WeaponItem
 from items import ItemLoader, Inventory
-from secrets import *
+from settings_secrets import *
 
 #######################################################
 # Load items from the items.ini file
@@ -212,15 +212,20 @@ LOCATION = "Commonwealth"
 SHOW_ALL_MARKERS = True
 MAP_ZOOM_SPEED = 0.2
 MAP_MOVE_SPEED = 30
-MIN_MAP_ZOOM = 0.2
+MIN_MAP_ZOOM = 2
+INITIAL_MAP_ZOOM = 1.5
 MARKER_SCALE_MIN = 0.5
 MARKER_SCALE_MAX = 1.5
 MAP_EDGES_OFFSET = 5
+MAP_SIZE = 620
+LOGO_SIZE = 7.3
+MAP_ZOOM = 12
+MAP_ICON_SIZE = 30
+MAP_PLACES_ZOOM = 20000
+MAP_MIN_NODE_DISTANCE = 1000
 
 MAP_TOP_EDGE = 25
 MAP_SIDE_MARGIN = 4
-LONGITUDE = 52.2619
-LATITUDE = 4.9865
 ZOOM = 8
 MOVEMENT_SPEED = 15
 EXTRA_RESOLUTION = 2

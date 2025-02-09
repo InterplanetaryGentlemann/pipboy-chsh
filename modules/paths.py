@@ -43,12 +43,8 @@ ITEMS_BASE_FOLDER = "../images/inventory/items"
 COMMONWEALTH_MAP = "../images/worldmap/CompanionWorldMap.png"
 COMMONWEALTH_MAP_MARKERS = "../images/worldmap/WorldMapMarkers.png"
 
-MARKER_IMAGES = {
-    'quest': 'quest_marker.png',
-    'player': '../images/svgs/MapMarkers/icon_94.svg',
-    'settlement': 'settlement_marker.png',
-    'default': 'default_marker.png',
-}
+MAP_ICONS_BASE_FOLDER = "../images/svgs/MapMarkers"
+
 
 
 
@@ -69,3 +65,71 @@ ROTARY_VERTICAL_1 = "../sounds/pipboy/RotaryVertical/UI_PipBoy_RotaryVertical_01
 ROTARY_VERTICAL_2 = "../sounds/pipboy/RotaryVertical/UI_PipBoy_RotaryVertical_02.ogg"
 OK_SOUND = "../sounds/pipboy/UI_PipBoy_OK.ogg"
 SPECIAL_SOUNDS = "../sounds/pipboy/PerkMenu/SPECIAL"
+
+
+
+# Misc
+MAP_CACHE = "../cache/maps"
+MAP_PLACES_CACHE = "../cache/places"
+
+
+def get_static_map_url(size, apikey, lon, lat, zoom):
+    return (
+        f"https://maps.geoapify.com/v1/staticmap?style=osm-bright&width={size}&height={size}&center=lonlat:{lon},{lat}&zoom={zoom}&"
+        f"styleCustomization=background:%23585858|landcover-glacier:none|landuse-residential:none|landuse-commercial:none|landuse-industrial:none|"
+        f"park:none|park-outline:none|landuse-cemetery:none|landuse-hospital:none|landuse-school:none|landuse-railway:none|landcover-wood:none|"
+        f"landcover-grass:none|landcover-grass-park:none|waterway_tunnel:none|waterway-other:none|waterway-stream-canal:none|waterway-river:none|"
+        f"water-offset:%23292929|water:%23000000|water-pattern:none|landcover-ice-shelf:none|building:none|building-top:none|tunnel-service-track-casing:none|"
+        f"tunnel-minor-casing:none|tunnel-secondary-tertiary-casing:none|tunnel-trunk-primary-casing:none|tunnel-motorway-casing:none|tunnel-path:none|"
+        f"tunnel-service-track:none|tunnel-minor:none|tunnel-secondary-tertiary:none|tunnel-trunk-primary:none|tunnel-motorway:none|tunnel-railway:none|"
+        f"ferry:none|aeroway-taxiway-casing:none|aeroway-runway-casing:none|aeroway-area:none|aeroway-taxiway:none|aeroway-runway:none|highway-area:none|"
+        f"highway-motorway-link-casing:none|highway-link-casing:none|highway-minor-casing:none|highway-secondary-tertiary-casing:none|highway-primary-casing:none|"
+        f"highway-trunk-casing:none|highway-motorway-casing:none|highway-path:none|highway-motorway-link:none|highway-link:none|highway-minor:%23868686|"
+        f"highway-secondary-tertiary:%23868686|highway-primary:%23868686|highway-trunk:%23868686|highway-motorway:%23868686|railway-transit:none|"
+        f"railway-transit-hatching:none|railway-service:none|railway-service-hatching:none|railway:none|railway-hatching:none|bridge-motorway-link-casing:none|"
+        f"bridge-link-casing:none|bridge-secondary-tertiary-casing:none|bridge-trunk-primary-casing:none|bridge-motorway-casing:none|bridge-path-casing:none|"
+        f"bridge-path:%23868686|bridge-motorway-link:%23868686|bridge-link:%23868686|bridge-secondary-tertiary:%23868686|bridge-trunk-primary:%23868686|"
+        f"bridge-motorway:%23868686|bridge-railway:none|bridge-railway-hatching:none|cablecar:none|cablecar-dash:none|boundary-land-level-4:none|"
+        f"boundary-land-level-2:none|boundary-land-disputed:none|boundary-water:none|waterway-name:none|water-name-lakeline:none|water-name-ocean:none|"
+        f"water-name-other:none|poi-level-3:none|poi-level-2:none|poi-level-1:none|poi-railway:none|road_oneway:none|road_oneway_opposite:none|"
+        f"highway-name-path:none|highway-name-minor:none|highway-name-major:none|highway-shield:none|highway-shield-us-interstate:none|highway-shield-us-other:none|"
+        f"airport-label-major:none|place-other:none|place-village:none|place-town:none|place-city:none|place-city-capital:none|place-country-other:none|"
+        f"place-country-3:none|place-country-2:none|place-country-1:none|place-continent:none&apiKey={apikey}"
+    )
+
+
+
+OVERPASS_URL = "https://overpass-api.de/api/interpreter"    
+    
+def get_places_map_url(radius, lat, lon):
+    return (
+        f"""
+        [out:json][timeout:25];
+        (
+        node["place"~"city|town|village|hamlet"](around:{radius},{lat},{lon});
+        way["place"~"city|town|village|hamlet"](around:{radius},{lat},{lon});
+        relation["place"~"city|town|village|hamlet"](around:{radius},{lat},{lon});
+        
+        node["water"="lake"](around:{radius},{lat},{lon});
+        way["water"="lake"](around:{radius},{lat},{lon});
+        relation["water"="lake"](around:{radius},{lat},{lon});
+        
+        node["natural"="water"](around:{radius},{lat},{lon});
+        way["natural"="water"](around:{radius},{lat},{lon});
+        relation["natural"="water"](around:{radius},{lat},{lon});
+        
+        node["historic"="ruins"](around:{radius},{lat},{lon});
+        way["historic"="ruins"](around:{radius},{lat},{lon});
+        relation["historic"="ruins"](around:{radius},{lat},{lon});
+        
+        node["landuse"="industrial"](around:{radius},{lat},{lon});
+        way["landuse"="industrial"](around:{radius},{lat},{lon});
+        relation["landuse"="industrial"](around:{radius},{lat},{lon});
+        
+        node["military"](around:{radius},{lat},{lon});
+        way["military"](around:{radius},{lat},{lon});
+        relation["military"](around:{radius},{lat},{lon});
+        );
+        out center;
+        """
+    )
