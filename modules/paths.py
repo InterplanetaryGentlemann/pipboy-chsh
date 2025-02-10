@@ -71,6 +71,7 @@ SPECIAL_SOUNDS = "../sounds/pipboy/PerkMenu/SPECIAL"
 # Misc
 MAP_CACHE = "../cache/maps"
 MAP_PLACES_CACHE = "../cache/places"
+MAP_RENDERED_CACHE = "../cache/rendered_maps"
 
 
 def get_static_map_url(size, logo_size, apikey, lon, lat, zoom):
@@ -102,30 +103,51 @@ def get_static_map_url(size, logo_size, apikey, lon, lat, zoom):
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"    
     
 def get_places_map_url(radius, lat, lon):
-    return (
-        f"""
-        [out:json][timeout:25];
-        (
-        node["place"~"city|town|village|hamlet"](around:{radius},{lat},{lon});
-        way["place"~"city|town|village|hamlet"](around:{radius},{lat},{lon});
-        relation["place"~"city|town|village|hamlet"](around:{radius},{lat},{lon});
+    # Define the different queries to be run. You can easily add more queries here.
+    queries = [
+        # Settlements
+        'node["place"~"city|town|village|hamlet"](around:{radius},{lat},{lon});',
+        'way["place"~"city|town|village|hamlet"](around:{radius},{lat},{lon});',
+        'relation["place"~"city|town|village|hamlet"](around:{radius},{lat},{lon});',
+
+        # Lakes
+        'node["water"="lake"](around:{radius},{lat},{lon});',
+        'way["water"="lake"](around:{radius},{lat},{lon});',
+        'relation["water"="lake"](around:{radius},{lat},{lon});',
+
+        # Ruins
+        'node["historic"="ruins"](around:{radius},{lat},{lon});',
+        'way["historic"="ruins"](around:{radius},{lat},{lon});',
+        'relation["historic"="ruins"](around:{radius},{lat},{lon});',
+
+        # Industrial areas
+        'node["landuse"~"industrial|farmland"](around:{radius},{lat},{lon});',
+        'way["landuse"~"industrial|farmland"](around:{radius},{lat},{lon});',
+        'relation["landuse"~"industrial|farmland"](around:{radius},{lat},{lon});',
+
+        # Military facilities
+        'node["military"~"base|bunker"](around:{radius},{lat},{lon});',
+        'way["military"~"base|bunker"](around:{radius},{lat},{lon});',
+        'relation["military"~"base|bunker"](around:{radius},{lat},{lon});',
+
+        # Man made bunkers and bridges
+        'node["man_made"~"bunker|bridge"](around:{radius},{lat},{lon});',
+        'way["man_made"~"bunker|bridge"](around:{radius},{lat},{lon});',
+        'relation["man_made"~"bunker|bridge"](around:{radius},{lat},{lon});',
         
-        node["water"="lake"](around:{radius},{lat},{lon});
-        way["water"="lake"](around:{radius},{lat},{lon});
-        relation["water"="lake"](around:{radius},{lat},{lon});
+        # Amenities
+        'node["amenity"~"police"](around:{radius},{lat},{lon});',
+        'way["amenity"~"police"](around:{radius},{lat},{lon});',
+        'relation["amenity"~"police"](around:{radius},{lat},{lon});',
         
-        node["historic"="ruins"](around:{radius},{lat},{lon});
-        way["historic"="ruins"](around:{radius},{lat},{lon});
-        relation["historic"="ruins"](around:{radius},{lat},{lon});
-        
-        node["landuse"="industrial"](around:{radius},{lat},{lon});
-        way["landuse"="industrial"](around:{radius},{lat},{lon});
-        relation["landuse"="industrial"](around:{radius},{lat},{lon});
-        
-        node["military"](around:{radius},{lat},{lon});
-        way["military"](around:{radius},{lat},{lon});
-        relation["military"](around:{radius},{lat},{lon});
-        );
-        out center;
-        """
-    )
+
+    ]
+    # Fill in the parameters and join the queries
+    query_body = "\n".join(queries).format(radius=radius, lat=lat, lon=lon)
+    return f"""
+    [out:json][timeout:25];
+    (
+    {query_body}
+    );
+    out center;
+    """

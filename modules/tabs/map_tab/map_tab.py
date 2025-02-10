@@ -30,10 +30,10 @@ class MapTab:
             self._init_footer_text()
         )
         
-        # Initialize subtabs
-        # self.world_map_subtab = WorldMap(self.screen, self.draw_space, settings.COMMONWEALTH_MAP)
-        
-        self.world_map_subtab = RealMap(self.screen, self.draw_space, settings.MAP_ZOOM)
+        if settings.GAME_ACCURATE_MODE:
+            self.world_map_subtab = WorldMap(self.screen, self.draw_space)
+        else:
+            self.world_map_subtab = RealMap(self.screen, self.draw_space, settings.MAP_ZOOM)
  
         sub_tab_map = {
             0: self.world_map_subtab
@@ -59,7 +59,7 @@ class MapTab:
         """Create surface with map-related footer information"""
         
         date_surface = self.footer_font.render(self.date, True, settings.PIP_BOY_LIGHT)
-        location_surface = self.footer_font.render(settings.LOCATION, True, settings.PIP_BOY_LIGHT)
+        location_surface = self.footer_font.render(settings.FAKE_LOCATION if settings.GAME_ACCURATE_MODE else settings.REAL_LOCATION, True, settings.PIP_BOY_LIGHT)
         
         footer_surface = pygame.Surface((settings.SCREEN_WIDTH, settings.BOTTOM_BAR_HEIGHT), pygame.SRCALPHA)
         
@@ -74,7 +74,8 @@ class MapTab:
         self.sub_tab_thread_handler.update_tab_index(self.current_sub_tab_index)
 
     def scroll(self, direction: bool):
-        self.world_map_subtab.zoom(direction)
+        if self.world_map_subtab.is_initialized:
+            self.world_map_subtab.zoom(direction)
 
     def update_footer_time(self):
         while True:
@@ -85,7 +86,8 @@ class MapTab:
             pygame.time.wait(wait_time * 1000)
             
     def navigate(self, direction: int):
-        self.world_map_subtab.navigate(direction)
+        if self.world_map_subtab.is_initialized:
+            self.world_map_subtab.navigate(direction)
 
     def handle_threads(self, tab_selected: bool):
         self.sub_tab_thread_handler.update_tab_index(self.current_sub_tab_index)
@@ -95,4 +97,5 @@ class MapTab:
         self.tab_instance.render_footer(self)
         match self.current_sub_tab_index:
             case 0:  # World Map
-                self.world_map_subtab.render()
+                if self.world_map_subtab.is_initialized:
+                    self.world_map_subtab.render()

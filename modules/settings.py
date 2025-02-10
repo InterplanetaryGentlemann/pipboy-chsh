@@ -208,7 +208,7 @@ INTERMISSION_FREQUENCY = 50
 # ------------------
 # Map Tab Settings
 # ------------------
-LOCATION = "Commonwealth"
+FAKE_LOCATION = "Commonwealth"
 SHOW_ALL_MARKERS = True
 MAP_ZOOM_SPEED = 0.2
 MAP_MOVE_SPEED = 30
@@ -223,22 +223,34 @@ LOGO_SIZE = 7.3
 MAP_ZOOM = 12
 MAP_ICON_SIZE = 30
 MAP_PLACES_ZOOM = 20000
-MAP_MIN_NODE_DISTANCE = 1000000
+MAP_MIN_NODE_DISTANCE = 200
 
-MAP_NODE_TYPE_LIMITS = {
-    "city": 20,
-    "village": 15,
-    "town": 10,
-    "hamlet": 8,
+MAP_TYPE_PRIORITY = {
+    "town": 50,
+    "police": 5,
+    "village": 50,
     "ruins": 20,
-    "shelter": 4,
-    "bunker": 10,
-    "lake": 15,
-    "industrial": 8,
+    "base": 10,
+    "bunker": 40,
+    "hamlet": 10,
+    "farmland": 10,
+    "lake": 6,
+    "bridge": 6,
+    "industrial": 9,
 }
 
+OSM_KEYS = (
+    "place",
+    "water",
+    "historic",
+    "landuse",
+    "military",
+    "man_made",
+    "amenity",
+)
+    
 
-MAP_TYPE_PRIORITY = list(MAP_NODE_TYPE_LIMITS.keys())
+
 
 
 MAP_TILE_SIZE = 512

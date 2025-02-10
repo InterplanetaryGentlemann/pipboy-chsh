@@ -1,9 +1,10 @@
+import hashlib
 import io
 import json
 import math
 import os
 import random
-from threading import Lock
+from threading import Lock, Thread
 import requests
 import pygame
 from typing import Tuple, List, Dict, Optional
@@ -38,6 +39,8 @@ class BaseMap:
             (0, -settings.MAP_MOVE_SPEED),  # Up
             (-settings.MAP_MOVE_SPEED, 0)   # Left
         ]
+        
+        self.is_initialized = True
 
     def _calculate_initial_offset(self) -> Vector2:
         """Calculate initial offset to center the map."""
@@ -124,14 +127,12 @@ class WorldMap(BaseMap):
 
 
 class RealMap(BaseMap):
-    """Dynamic real-world map using OSM and Overpass API."""
-    _cache: Dict[tuple, pygame.Surface] = {}
-    _places_cache: Dict[str, list] = {}
-    
-
+    """Dynamic real-world map using OSM and Overpass API."""    
 
     def __init__(self, screen: pygame.Surface, draw_space: pygame.Rect, 
                  api_zoom: int = 13):
+        
+        self.screen = screen
         self.lat, self.lon = settings.LATITUDE, settings.LONGITUDE
         self.api_zoom = api_zoom
         self.draw_space = draw_space
@@ -139,19 +140,21 @@ class RealMap(BaseMap):
 
         self._cache_lock = Lock()
         self._places_cache_lock = Lock()
-        # Initialize map components
-        self.map_image = self._fetch_map_image()
-        self.places = self._fetch_places()
-        self.rendered_map = self._draw_markers()
+        self.rendered_map_lock = Lock()
         
-        super().__init__(screen, draw_space, self.rendered_map)
+        self.is_initialized = False
+        Thread(target=self.init_map, daemon=True).start()
+
+
+    def init_map(self):
+        image = self._fetch_map_image()
+        places = self._fetch_places(image)
+        rendered_map = self._draw_markers(image, places)
+        super().__init__(self.screen, self.draw_space, rendered_map)
+
 
     def _fetch_map_image(self) -> pygame.Surface:
         """Retrieve map image with caching."""
-        cache_key = (round(self.lat, 6), round(self.lon, 6), self.api_zoom, settings.MAP_SIZE)
-        
-        if cached := self._cache.get(cache_key):
-            return cached.copy()
 
         # Try disk cache
         os.makedirs(settings.MAP_CACHE, exist_ok=True)
@@ -159,10 +162,9 @@ class RealMap(BaseMap):
         cache_path = os.path.join(settings.MAP_CACHE, filename)
 
         if os.path.exists(cache_path):
-            img = pygame.image.load(cache_path).convert()
-            with self._cache_lock:
-                self._cache[cache_key] = img
-            return Utils.tint_image(img)
+            map_img = pygame.image.load(cache_path).convert()
+            return map_img
+
 
         # Fetch new image
         url = settings.get_static_map_url(settings.MAP_SIZE, settings.EXTRA_MAP_SIZE, settings.GEOAPIFY_API_KEY,
@@ -174,59 +176,50 @@ class RealMap(BaseMap):
         except requests.RequestException as e:
             raise ConnectionError(f"Map API failed: {e}") from e
 
-        img = pygame.image.load(io.BytesIO(response.content)).convert()
-        width, height = img.get_size()
+        map_img = pygame.image.load(io.BytesIO(response.content)).convert()
+        width, height = map_img.get_size()
         min_dimension = min(width, height)
         # Calculate the top-left coordinates for a centered crop.
         x = (width - min_dimension) // 2
         y = (height - min_dimension) // 2
         cropped_img = pygame.Surface((min_dimension, min_dimension)).convert()
-        cropped_img.blit(img, (0, 0), (x, y, min_dimension, min_dimension))
+        cropped_img.blit(map_img, (0, 0), (x, y, min_dimension, min_dimension))
         
         pygame.image.save(cropped_img, cache_path)
-        with self._cache_lock:
-            self._cache[cache_key] = cropped_img
-        return Utils.tint_image(cropped_img)
+            
+        return cropped_img
 
-    def _fetch_places(self) -> List[dict]:
+
+
+    def _fetch_places(self, map_img: pygame.Surface) -> List[dict]:
         """Fetch and filter POI data with caching."""
         radius = self._calculate_search_radius()
-        cache_key = f"{self.lat:.6f}_{self.lon:.6f}_{self.api_zoom}_{radius}"
-        cache_file = f"{settings.MAP_PLACES_CACHE}.{cache_key}.json"
+        os.makedirs(settings.MAP_PLACES_CACHE, exist_ok=True)
+        cache_file = os.path.join(settings.MAP_PLACES_CACHE, f"{self.lat:.6f}_{self.lon:.6f}_{self.api_zoom}_{radius}.json")
 
-        if cached := self._places_cache.get(cache_key):
-            return cached
 
         # Try disk cache
         if os.path.exists(cache_file):
             with open(cache_file, "r") as f:
-                data = json.load(f)
-                filtered_places = data.get(cache_key, [])
-                with self._places_cache_lock:
-                    self._places_cache[cache_key] = filtered_places  # Update in-memory cache
-                return filtered_places
-
+                filtered_places = json.load(f)
+            return filtered_places
 
         # Fetch new data
         query = settings.get_places_map_url(radius, self.lat, self.lon)
         
         try:
-            response = requests.post(settings.OVERPASS_URL, data={'data': query}, timeout=15)
+            response = requests.post(settings.OVERPASS_URL, data={'data': query}, timeout=25)
             response.raise_for_status()
         except requests.RequestException as e:
             return []
 
         raw_places = self._process_response_data(response.json())
-        filtered_places = self._filter_places(raw_places)
-        # filtered_places = raw_places
-        
-        # Update cache
+        random.shuffle(raw_places)
+        filtered_places = self._filter_places(raw_places, map_img)
 
         with open(cache_file, "w") as f:
-            json.dump({cache_key: filtered_places}, f, indent=2)
+            json.dump(filtered_places, f, indent=2)
 
-        with self._places_cache_lock:
-            self._places_cache[cache_key] = filtered_places
 
         return filtered_places
 
@@ -249,12 +242,14 @@ class RealMap(BaseMap):
 
     def _extract_types(self, tags: dict) -> List[str]:
         """Extract place types from OSM tags."""
-        # Get the valid types from MAP_NODE_TYPE_LIMITS (excluding the fallback "default")
-        valid_types = set(settings.MAP_NODE_TYPE_LIMITS.keys())
+        # Get the valid types from settings.MAP_TYPE_PRIORITY (excluding the fallback "default")
+        
+        map_types = list(settings.MAP_TYPE_PRIORITY.keys())
+        valid_types = set(map_types)
         types_found = set()
         
         # For these OSM tag keys, check if the tag's value is one of our valid types.
-        for osm_key in ["place", "water", "historic", "landuse", "military"]:
+        for osm_key in settings.OSM_KEYS:
             tag_value = tags.get(osm_key)
             if tag_value in valid_types:
                 types_found.add(tag_value)
@@ -262,107 +257,81 @@ class RealMap(BaseMap):
         
         sorted_types = sorted(
             types_found, 
-            key=lambda t: settings.MAP_TYPE_PRIORITY.index(t) if t in settings.MAP_TYPE_PRIORITY else len(settings.MAP_TYPE_PRIORITY)
+            key=lambda t: map_types.index(t) if t in map_types else len(map_types)
         )
         return sorted_types
 
-    def _filter_places(self, raw_places: List[dict]) -> List[dict]:
-        """Filter places with priority-based selection when conflicts occur,
-        and remove any markers that would be drawn outside the visible map."""
-        # Sort places by priority (highest first)
+
+    def _filter_places(self, raw_places: List[dict], map_img: pygame.Surface) -> List[dict]:
+        """Filter places using dynamic radii based on icon size and priority."""
+        # Sort by priority (highest first) to ensure they are placed first
         sorted_places = sorted(raw_places, 
             key=lambda x: self._get_type_priority(x["types"]), 
-            reverse=False
+            reverse=True  # Process higher priority markers first
         )
-        # # shuffel the places of each type
-        # for place_type in settings.MAP_NODE_TYPE_LIMITS:
-        #     type_places = [p for p in sorted_places if place_type in p["types"]]
-        #     random.shuffle(type_places)
-        #     sorted_places = [p for p in sorted_places if p not in type_places] + type_places
         
-        # Setup values for bounds checking.
-        # Use the fetched map image as the reference (the full image that markers are drawn on).
-        map_surface = self.map_image
-        map_size = Vector2(map_surface.get_size())
-        # Compute the pixel coordinates for the center (the current focal point of the map)
-        center_pixel = Vector2(self.lat_lon_to_pixel(self.lat, self.lon, self.api_zoom))
-        map_center = map_size / 2
-
         filtered = []
-        type_counts = {k: 0 for k in settings.MAP_NODE_TYPE_LIMITS}
-
+        occupied_positions = []  # Tracks placed markers' centers and radii
+        type_counts = {t: 0 for t in settings.MAP_TYPE_PRIORITY}
+        
         for place in sorted_places:
-            try:
-                place_type = place["types"][0]
-            except IndexError:
-                continue
-            
-            # Enforce the type limit.
-            if type_counts[place_type] >= settings.MAP_NODE_TYPE_LIMITS[place_type]:
-                continue
-                
-            # Skip if the place is too close to an already-selected higher priority marker.
-            # if self._is_too_close_to_higher_priority(place, filtered):
-            #     continue
+            # Get the primary type of the place (highest priority type)
+            place_type = place["types"][0] if place["types"] else "default"
 
-            # Determine if the marker for this place would be drawn within the map bounds.
+            # Skip if the type is not in the limits or the limit has been reached
+            if place_type not in settings.MAP_TYPE_PRIORITY or \
+            type_counts[place_type] >= settings.MAP_TYPE_PRIORITY[place_type]:
+                continue
+
             icon = self._get_icon(place["types"])
             if icon is None:
-                continue  # or you might choose to include it if you want a fallback behavior
+                continue
 
             icon_size = Vector2(icon.get_size())
-            # Convert the place's geographic coordinates to a pixel coordinate on the map.
-            marker_pos = Vector2(self.lat_lon_to_pixel(place["lat"], place["lon"], self.api_zoom))
-            # Calculate where the icon would be drawn relative to the map image.
-            screen_pos = marker_pos - center_pixel + map_center - icon_size / 2
+            map_size = Vector2(map_img.get_size())
+            screen_pos = self._get_marker_screen_position(place, icon_size, map_size)
+            icon_center = screen_pos + icon_size / 2
 
-            # Only include the place if its marker is fully within the map surface.
+            # Ensure marker is within map bounds
             if not (0 <= screen_pos.x <= map_size.x - icon_size.x and
                     0 <= screen_pos.y <= map_size.y - icon_size.y):
                 continue
-                
-            # Passed all checks: add this place.
+
+            # Calculate radius as half-diagonal of the icon
+            radius = (icon_size / 2).length()
+
+            # Check against existing markers using icon-based radii
+            too_close = any(
+                (icon_center - existing['center']).length() < (radius + existing['radius'])
+                for existing in occupied_positions
+            )
+            if too_close:
+                continue
+
+            # Add the place to the filtered list
             filtered.append(place)
-            type_counts[place_type] += 1
+            occupied_positions.append({'center': icon_center, 'radius': radius})
+            type_counts[place_type] += 1  # Increment the count for this type
 
         return filtered
+    
+    def _get_marker_screen_position(self, place: dict, icon_size: Vector2, map_size: Vector2) -> Vector2:
+        marker_pos = Vector2(self.lat_lon_to_pixel(place["lat"], place["lon"], self.api_zoom))
+        center_pixel = Vector2(self.lat_lon_to_pixel(self.lat, self.lon, self.api_zoom))
+        map_center = map_size / 2
+        return marker_pos - center_pixel + map_center - icon_size / 2
+
+
 
     def _get_type_priority(self, types: List[str]) -> int:
         """Get the highest priority score from a place's types."""
-        for t in settings.MAP_TYPE_PRIORITY:
+        map_types = list(settings.MAP_TYPE_PRIORITY.keys())
+        for t in map_types:
             if t in types:
-                return len(settings.MAP_TYPE_PRIORITY) - settings.MAP_TYPE_PRIORITY.index(t)
+                return len(map_types) - map_types.index(t)
         return 0  # default priority
 
 
-
-    def _haversine(self, coords1: Tuple[float, float], coords2: Tuple[float, float]) -> float:
-            R = 6371000  # Earth radius in meters
-            phi1 = math.radians(coords1[0])
-            phi2 = math.radians(coords2[0])
-            delta_phi = math.radians(coords2[0] - coords1[0])
-            delta_lambda = math.radians(coords2[1] - coords1[1])
-            a = math.sin(delta_phi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2) ** 2
-            c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-            return R * c
-
-    def _is_too_close_to_higher_priority(self, new_place: dict, existing_places: List[dict]) -> bool:
-        """Check if place is too close to existing places of equal or higher priority."""
-        new_priority = self._get_type_priority(new_place["types"])
-        new_coords = (new_place["lat"], new_place["lon"])
-        
-        for existing in existing_places:
-            existing_priority = self._get_type_priority(existing["types"])
-            
-            # Only compare with existing places of equal or higher priority
-            if existing_priority >= new_priority:
-                distance = self._haversine(new_coords, (existing["lat"], existing["lon"]))
-                min_distance = settings.MAP_MIN_NODE_DISTANCE * random.uniform(0.5, 1.5)
-                
-                if distance < min_distance:
-                    return True
-                    
-        return False
 
     def _calculate_search_radius(self) -> int:
         """Convert zoom level to search radius in meters."""
@@ -370,20 +339,17 @@ class RealMap(BaseMap):
         return int((settings.MAP_SIZE * meters_per_pixel * math.sqrt(2)) / 2)
 
 
-    def _draw_markers(self) -> pygame.Surface:
+    def _draw_markers(self, map_image: pygame.Surface, places) -> pygame.Surface:
         """Draw markers on the map surface."""
-        map_surface = self.map_image.copy()
-        center_pixel = self.lat_lon_to_pixel(self.lat, self.lon, self.api_zoom)
-        map_center = Vector2(map_surface.get_size()) / 2
+        map_surface = Utils.tint_image(map_image.copy())
         map_size = Vector2(map_surface.get_size())
 
-        for place in self.places:
+        for place in places:
             icon = self._get_icon(place["types"])
             if icon is None:
                 continue
             icon_size = Vector2(icon.get_size())
-            marker_pos = Vector2(self.lat_lon_to_pixel(place["lat"], place["lon"], self.api_zoom))
-            screen_pos = marker_pos - Vector2(center_pixel) + map_center - icon_size / 2
+            screen_pos = self._get_marker_screen_position(place, icon_size, map_size)
 
             # Check if the marker is within the map bounds
             if (0 <= screen_pos.x <= map_size.x - icon_size.x and
@@ -405,7 +371,6 @@ class RealMap(BaseMap):
     def _get_icon(self, types: List[str]) -> pygame.Surface:
         for t in types:
             if t in self.icons:
-                print(t)
                 return self.icons[t]
         # Return a default icon if available
         return self.icons.get("default", None)
