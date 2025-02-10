@@ -92,9 +92,14 @@ class Utils:
         if settings.SOUND_ON:
             sound = pygame.mixer.Sound(sound_file)
             sound.set_volume(volume)
-            sound.play(start) if not channel else pygame.mixer.Channel(channel).play(sound)
-            
-            
+            if channel is None:
+                sound.play(start)
+            else:
+                # Get the channel object once and reuse it
+                ch = pygame.mixer.Channel(channel)
+                ch.stop()  # Stops any sound currently on this channel
+                ch.play(sound)
+                
     @staticmethod
     def lerp(start, end, start_range, end_range, value):
         """

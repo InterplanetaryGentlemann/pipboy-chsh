@@ -12,7 +12,7 @@ def main():
     """Main entry point for the Pip-Boy application."""
     # Main application loop
     pygame.init()
-    pygame.mixer.init(frequency=44100, size=-16, channels=1)
+    pygame.mixer.init(frequency=44100, size=-16, channels=5)
 
 
     screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))

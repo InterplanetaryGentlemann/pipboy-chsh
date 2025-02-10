@@ -6,4 +6,4 @@ modules/secrets.py
 /.idea
 /.qodo
 modules/settings_secrets.py
-/__pycache__/
+__pycache__/

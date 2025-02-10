@@ -356,7 +356,7 @@ class AnimatedImage:
 
     def _update_loop(self):
         """Thread function for updating frames."""
-        while not self.stop_event.is_set() or not self.done:
+        while not self.stop_event.is_set() and not self.done:
             with self.lock:  # Ensure thread safety for frame updates
                 if self.done:
                     break
