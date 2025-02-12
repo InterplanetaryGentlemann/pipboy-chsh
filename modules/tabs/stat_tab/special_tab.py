@@ -101,7 +101,7 @@ class SpecialTab:
         frame_orders = {}
         for i, special in enumerate(settings.SPECIAL):
             
-            path = f"{settings.SPECIAL_BASE_FOLDER}/{special}"
+            path = f"{settings.SPECIAL_BASE_FOLDER}/{special.lower()}"
             
 
             images = []
