@@ -1,3 +1,5 @@
+#!/home/pi/pipboy/pipboy-pi/pipboy-venv/bin/python
+
 import sys
 import pygame
 import settings
