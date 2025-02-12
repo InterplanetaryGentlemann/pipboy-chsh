@@ -16,8 +16,8 @@ def main():
     # Main application loop
     if settings.RASPI:
         os.environ["SDL_VIDEODRIVER"] = "kmsdrm"
-        os.environ["SDL_VIDEO_KMSDRM_MODE"] = "320x255"
-        os.environ["SDL_VIDEO_KMSDRM_REFRESH"] = "30"
+        os.environ["SDL_VIDEO_KMSDRM_MODE"] = f"{settings.SCREEN_WIDTH}x{settings.SCREEN_HEIGHT}"
+        os.environ["SDL_VIDEO_KMSDRM_REFRESH"] = f"{settings.FPS}"
         os.environ["SDL_VIDEO_KMSDRM_VSYNC"] = "0" 
 
         
