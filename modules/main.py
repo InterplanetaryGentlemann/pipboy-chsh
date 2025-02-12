@@ -21,6 +21,7 @@ def main():
     pygame.mixer.init(frequency=44100, size=-16, channels=5)
 
     pygame.mouse.set_visible(False)
+    
 
     if settings.RASPI:
         infoObject = pygame.display.Info()
