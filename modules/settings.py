@@ -38,8 +38,8 @@ YEARS_ADDED = 263
 # ------------------
 # Screen Settings
 # ------------------
-SCREEN_WIDTH = 320
-SCREEN_HEIGHT = 255
+SCREEN_WIDTH = 640
+SCREEN_HEIGHT = 480
 FPS = 24
 FULLSCREEN = True if RASPI else False
 BACKGROUND = (0, 0, 0)
