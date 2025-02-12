@@ -1,7 +1,8 @@
 import os
-from data_models import LimbPosition, IconConfig, WeaponItem
+from data_models import LimbPosition, IconConfig
 from items import ItemLoader, Inventory
 from settings_secrets import *
+import platform
 
 #######################################################
 # Load items from the items.ini file
@@ -27,6 +28,9 @@ SUBTABS = {
 # ------------------
 # General Settings
 # ------------------
+
+RASPI = True if platform.system() == 'Linux' else False
+
 SPEED = 1
 GAME_ACCURATE_MODE = False
 YEARS_ADDED = 263
@@ -37,7 +41,7 @@ YEARS_ADDED = 263
 SCREEN_WIDTH = 320
 SCREEN_HEIGHT = 255
 FPS = 24
-
+FULLSCREEN = True if RASPI else False
 BACKGROUND = (0, 0, 0)
 PIP_BOY_LIGHT = (0, 255, 0)
 PIP_BOY_MIDDLE = (0, 190, 0)
