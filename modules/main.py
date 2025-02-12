@@ -19,8 +19,7 @@ def main():
         os.environ["SDL_VIDEO_KMSDRM_MODE"] = "320x255"
         os.environ["SDL_VIDEO_KMSDRM_REFRESH"] = "60"
         os.environ["SDL_VIDEO_KMSDRM_VSYNC"] = "0" 
-        modes = pygame.display.list_modes()
-        print(f"Available modes: {modes}") 
+
         
     pygame.init()
     pygame.mixer.init(frequency=44100, size=-16, channels=5)
@@ -29,6 +28,8 @@ def main():
 
     
     screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT), pygame.FULLSCREEN if settings.FULLSCREEN else 0)
+    modes = pygame.display.list_modes()
+    print(f"Available modes: {modes}") 
     print(pygame.display.Info())
     
     pygame.display.set_caption("Pip-Boy")
