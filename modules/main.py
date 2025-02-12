@@ -20,8 +20,13 @@ def main():
     pygame.init()
     pygame.mixer.init(frequency=44100, size=-16, channels=5)
 
+    pygame.mouse.set_visible(False)
 
-    screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT), pygame.FULLSCREEN if settings.FULLSCREEN else 0)
+    if settings.RASPI:
+        infoObject = pygame.display.Info()
+        screen = pygame.display.set_mode((infoObject.current_w, infoObject.current_h), pygame.FULLSCREEN)
+    else:
+        screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
     
     pygame.display.set_caption("Pip-Boy")
     clock = pygame.time.Clock()
