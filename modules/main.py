@@ -1,5 +1,6 @@
 #!/home/pi/pipboy/pipboy-pi/pipboy-venv/bin/python
 
+import os
 import sys
 import pygame
 import settings
@@ -13,6 +14,9 @@ from input_manager import InputManager
 def main():
     """Main entry point for the Pip-Boy application."""
     # Main application loop
+    if settings.RASPI:
+        os.environ["SDL_VIDEODRIVER"] = "kmsdrm"
+        
     pygame.init()
     pygame.mixer.init(frequency=44100, size=-16, channels=5)
 
