@@ -33,6 +33,7 @@ def main():
     modes = pygame.display.list_modes()
     print(f"Available modes: {modes}") 
     print(pygame.display.Info())
+    print("Driver:", pygame.display.get_driver()) 
     pygame.mouse.set_visible(False)
     
     pygame.display.set_caption("Pip-Boy")
