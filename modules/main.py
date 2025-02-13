@@ -22,6 +22,7 @@ def main():
     if settings.RASPI:
         os.environ["SDL_VIDEODRIVER"] = "x11"
         os.environ["DISPLAY"] = ":0"
+        os.environ["SDL_AUDIODRIVER"] = "alsa"
 
         
     pygame.init()
@@ -31,9 +32,6 @@ def main():
     
     screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT), pygame.FULLSCREEN if settings.RASPI else 0)
     modes = pygame.display.list_modes()
-    print(f"Available modes: {modes}") 
-    print("Driver:", pygame.display.get_driver()) 
-    print(pygame.display.Info())
     pygame.mouse.set_visible(False)
     
     pygame.display.set_caption("Pip-Boy")

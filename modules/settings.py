@@ -30,7 +30,6 @@ SUBTABS = {
 # ------------------
 
 RASPI = True if platform.system() == 'Linux' else False
-print(platform.system())
 SPEED = 1
 GAME_ACCURATE_MODE = False
 YEARS_ADDED = 263
