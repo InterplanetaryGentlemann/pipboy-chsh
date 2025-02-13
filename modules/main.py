@@ -30,11 +30,11 @@ def main():
     pygame.mixer.init(frequency=44100, size=-16, channels=5)
 
 
-    print("Driver:", pygame.display.get_driver()) 
     
     screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT), pygame.FULLSCREEN if settings.RASPI else 0)
     modes = pygame.display.list_modes()
     print(f"Available modes: {modes}") 
+    print("Driver:", pygame.display.get_driver()) 
     print(pygame.display.Info())
     pygame.mouse.set_visible(False)
     
