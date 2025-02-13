@@ -21,7 +21,7 @@ def main():
     #     os.environ["SDL_VIDEO_KMSDRM_VSYNC"] = "0" 
     
     if settings.RASPI:
-        os.putenv("SDL_VIDEODRIVER", "fbcon")
+        os.putenv("SDL_VIDEODRIVER", "kmsdrm")
         os.putenv("SDL_FBDEV", "/dev/fb0")
 
 
