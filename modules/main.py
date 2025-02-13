@@ -21,7 +21,7 @@ def main():
     #     os.environ["SDL_VIDEO_KMSDRM_VSYNC"] = "0" 
     
     if settings.RASPI:
-        os.environ["SDL_VIDEODRIVER"] = "fbcon"
+        os.environ["SDL_VIDEODRIVER"] = "dummy"
 
         
     pygame.init()
