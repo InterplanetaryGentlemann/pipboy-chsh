@@ -1,4 +1,3 @@
-#!/home/pi/pipboy/pipboy-pi/pipboy-venv/bin/python
 
 import os
 import sys
@@ -20,8 +19,9 @@ def main():
     #     os.environ["SDL_VIDEO_KMSDRM_REFRESH"] = f"{settings.FPS}"
     #     os.environ["SDL_VIDEO_KMSDRM_VSYNC"] = "0" 
     
-    # if settings.RASPI:
-    #     os.putenv("SDL_VIDEODRIVER", "kmsdrm")
+    if settings.RASPI:
+        os.putenv("SDL_VIDEODRIVER", "fbcon")
+        os.putenv("SDL_FBDEV", "/dev/fb0")
 
         
     pygame.init()
