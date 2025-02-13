@@ -20,8 +20,10 @@ def main():
     #     os.environ["SDL_VIDEO_KMSDRM_REFRESH"] = f"{settings.FPS}"
     #     os.environ["SDL_VIDEO_KMSDRM_VSYNC"] = "0" 
     
-    # if settings.RASPI:
-    #     os.environ["DISPLAY"] = ":0" 
+    if settings.RASPI:
+        os.environ["SDL_VIDEODRIVER"] = "fbcon"    # Use framebuffer driver
+        os.environ["SDL_FBDEV"] = "/dev/fb0"       # Explicitly set framebuffer device
+        os.environ["SDL_MOUSEDEV"] = "/dev/input/tty0"  # May need adjustment
 
         
     pygame.init()
