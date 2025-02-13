@@ -20,8 +20,8 @@ def main():
     #     os.environ["SDL_VIDEO_KMSDRM_REFRESH"] = f"{settings.FPS}"
     #     os.environ["SDL_VIDEO_KMSDRM_VSYNC"] = "0" 
     
-    if settings.RASPI:
-        os.environ["DISPLAY"] = ":0" 
+    # if settings.RASPI:
+    #     os.environ["DISPLAY"] = ":0" 
 
         
     pygame.init()
