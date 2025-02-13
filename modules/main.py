@@ -14,16 +14,16 @@ from input_manager import InputManager
 def main():
     """Main entry point for the Pip-Boy application."""
     # Main application loop
-    # if settings.RASPI:
-    #     os.environ["SDL_VIDEODRIVER"] = "kmsdrm"
-    #     os.environ["SDL_VIDEO_KMSDRM_MODE"] = f"{settings.SCREEN_WIDTH}x{settings.SCREEN_HEIGHT}"
-    #     os.environ["SDL_VIDEO_KMSDRM_REFRESH"] = f"{settings.FPS}"
-    #     os.environ["SDL_VIDEO_KMSDRM_VSYNC"] = "0" 
-    
     if settings.RASPI:
-        os.environ["SDL_VIDEODRIVER"] = "fbcon"    # Use framebuffer driver
-        os.environ["SDL_FBDEV"] = "/dev/fb0"       # Explicitly set framebuffer device
-        os.environ["SDL_MOUSEDEV"] = "/dev/input/tty0"  # May need adjustment
+        os.environ["SDL_VIDEODRIVER"] = "kmsdrm"
+        os.environ["SDL_VIDEO_KMSDRM_MODE"] = f"{settings.SCREEN_WIDTH}x{settings.SCREEN_HEIGHT}"
+        os.environ["SDL_VIDEO_KMSDRM_REFRESH"] = f"{settings.FPS}"
+        os.environ["SDL_VIDEO_KMSDRM_VSYNC"] = "0" 
+    
+    # if settings.RASPI:
+    #     os.environ["SDL_VIDEODRIVER"] = "fbcon"    # Use framebuffer driver
+    #     os.environ["SDL_FBDEV"] = "/dev/fb0"       # Explicitly set framebuffer device
+    #     os.environ["SDL_MOUSEDEV"] = "/dev/input/tty0"  # May need adjustment
 
         
     pygame.init()
