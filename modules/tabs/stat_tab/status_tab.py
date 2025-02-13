@@ -10,7 +10,7 @@ class StatusTab:
 
     def __init__(self, screen, tab_instance, draw_space: pygame.Rect):
         self.screen = screen
-        Utils = tab_instance
+        self.tab_instance = tab_instance
         self.draw_space = draw_space
         self.vaultboy_thread = None
         self.vaultboy_thread_running = False

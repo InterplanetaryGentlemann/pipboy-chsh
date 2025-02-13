@@ -46,7 +46,7 @@ class Utils:
                 Utils.tint_image(
                     pygame.image.load(os.path.join(folder, f)).convert_alpha(),
                     tint
-                ) for f in os.listdir(folder) if f.endswith(".png")
+                ) for f in sorted(os.listdir(folder)) if f.endswith(".png")
             ]
             return images
         except FileNotFoundError:
@@ -63,7 +63,7 @@ class Utils:
                 f: Utils.tint_image(
                     pygame.image.load_sized_svg(os.path.join(folder, f), (scale, scale)).convert_alpha(),
                     tint
-                ) for f in os.listdir(folder) if f.endswith(".svg")
+                ) for f in sorted(os.listdir(folder)) if f.endswith(".svg")
             }
             images= {k.replace(".svg", ""): v for k, v in images.items()}
             return images
