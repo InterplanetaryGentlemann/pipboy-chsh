@@ -19,6 +19,9 @@ def main():
     #     os.environ["SDL_VIDEO_KMSDRM_MODE"] = f"{settings.SCREEN_WIDTH}x{settings.SCREEN_HEIGHT}"
     #     os.environ["SDL_VIDEO_KMSDRM_REFRESH"] = f"{settings.FPS}"
     #     os.environ["SDL_VIDEO_KMSDRM_VSYNC"] = "0" 
+    
+    if settings.RASPI:
+        os.environ["SDL_VIDEODRIVER"] = "fbcon"
 
         
     pygame.init()
