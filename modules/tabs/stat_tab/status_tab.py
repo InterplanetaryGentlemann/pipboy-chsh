@@ -36,7 +36,7 @@ class StatusTab:
         self._setup_vault_boy_positions(vaultboy_scale)
         
         # Create animation step sequence: 0->3, 3->0
-        self.vaultboy_steps = list(range(4)) + list(range(4, 0, -1))
+        self.vaultboy_steps = (0.0, 0.0), (0.5, 1.8), (0.8, 3.0), (1.0, 1.8), (1.5, 0.1), (1.1, 1.3), (1.0, 3.0), (0.7, 2.3)
         
     def _init_player_name(self):
         self.player_surface = self.small_font.render(settings.PLAYER_NAME, True, settings.PIP_BOY_LIGHT)
@@ -231,8 +231,8 @@ class StatusTab:
         """Update vault boy animation frame"""
         while self.vaultboy_thread_running:
             
-            step_offset_y = self.vaultboy_steps[self.vaultboy_legs_index]
-            step_offset_x = self.vaultboy_steps[self.vaultboy_legs_index]
+            step_offset_y = self.vaultboy_steps[self.vaultboy_legs_index][1]
+            step_offset_x = self.vaultboy_steps[self.vaultboy_legs_index][0]
             self.vaultboy_surface.fill((0, 0, 0, 0))
             
             for part, pos in self.positions.items():
@@ -241,10 +241,10 @@ class StatusTab:
                 
                 self.vaultboy_surface.blit(
                     images[index],
-                    (pos[0] + step_offset_x / 2, pos[1] + step_offset_y / 4)
+                    (pos[0] + step_offset_x, pos[1] + step_offset_y)
                 )
             self.vaultboy_legs_index = (self.vaultboy_legs_index + 1) % len(self.scaled_legs)
-            pygame.time.wait(settings.SPEED * 100)
+            pygame.time.wait(settings.SPEED * 150)
     
     def handle_threads(self, tab_selected: bool):
         """ Handle the threads"""
