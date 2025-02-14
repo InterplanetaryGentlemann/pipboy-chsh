@@ -88,6 +88,7 @@ Here are some snapshots of the project in action:
 
 *The main Pip-Boy interface with navigation options.*
 
+
 ![Inventory Screen](documentation/screenshots/inventory.png)
 
 *Example of the interactive inventory module.*
