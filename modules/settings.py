@@ -91,7 +91,7 @@ LIST_TOP_MARGIN = 10
 # ------------------
 # Player Settings
 # ------------------
-PLAYER_NAME = "Kyran"
+PLAYER_NAME = "Kelmes"
 HP_MAX = 120
 HP_CURRENT = 100
 AP_MAX = 90
@@ -252,9 +252,6 @@ OSM_KEYS = (
     "amenity",
 )
     
-
-
-
 
 MAP_TILE_SIZE = 512
 

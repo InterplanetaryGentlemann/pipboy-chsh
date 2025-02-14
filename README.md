@@ -85,9 +85,11 @@ Once you have installed all the prerequisites and dependencies, running the proj
 Here are some snapshots of the project in action:
 
 ![Main Interface](documentation/screenshots/stat_screen.png)
+
 *The main Pip-Boy interface with navigation options.*
 
 ![Inventory Screen](documentation/screenshots/inventory.png)
+
 *Example of the interactive inventory module.*
 
 ---
