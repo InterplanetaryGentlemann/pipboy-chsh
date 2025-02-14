@@ -4,6 +4,9 @@
 .venv/
 modules/secrets.py
 /.idea
+.idea/
 /.qodo
 modules/settings_secrets.py
 __pycache__/
+old/
+sounds/radio/dcr_temp/
