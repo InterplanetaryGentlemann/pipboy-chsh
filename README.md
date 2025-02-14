@@ -1,7 +1,7 @@
 
 # PipBoy Pygame Project
 
-[![Python Version](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
+[![Python Version](https://img.shields.io/badge/Python-3.12%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > A Pip-Boy inspired application built with Python and Pygame
@@ -41,7 +41,7 @@ I have used the great pipboy project from [Zapwizard](https://github.com/zapwiza
 
 ### Prerequisites
 
-- **Python 3.8 or later:** [Download Python](https://www.python.org/downloads/)
+- **Python 3.12 or later:** [Download Python](https://www.python.org/downloads/)
 - **Pygame:** This project uses Pygame for its graphical interface.
 - **Optional: Pip** to install dependencies from `requirements.txt`.
 
@@ -128,5 +128,3 @@ For any questions, suggestions, or bug reports, feel free to reach out:
 
 - **GitHub Issues:** Use the [Issues](https://github.com/kelmes1/pipboy-pi/issues) page to report bugs or request features.
 - **Email:** [kelmesart@gmail.com](mailto:kelmesart@gmail.com)
-
-Happy coding and enjoy your journey with the Pip-Boy Pygame Project!
