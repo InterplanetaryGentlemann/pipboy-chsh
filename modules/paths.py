@@ -15,6 +15,7 @@ SCANLINES_OVERLAY = "../images/scanlines.png"
 CRT_STATIC = "../images/static"
 BOOT_THUMBS = "../images/boot"
 STAT_TAB_BODY_BASE_FOLDER = "../images/stats/body"
+STAT_TAB_BODY_SVG_BASE_FOLDER = "../images/svgs/vaultboy_body"
 STAT_TAB_GUN = "../images/stats/gun.png"
 STAT_TAB_ARMOUR = "../images/stats/helmet.png"
 STAT_TAB_RETICLE = "../images/stats/reticle.png"
@@ -71,6 +72,7 @@ SPECIAL_SOUNDS = "../sounds/pipboy/PerkMenu/SPECIAL"
 MAP_CACHE = "../cache/maps"
 MAP_PLACES_CACHE = "../cache/places"
 MAP_RENDERED_CACHE = "../cache/rendered_maps"
+STAT_TAB_HEAD_OFFSET_INI = "head_positions.ini"
 
 
 def get_static_map_url(size, logo_size, apikey, lon, lat, zoom):

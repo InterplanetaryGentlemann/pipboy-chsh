@@ -70,6 +70,23 @@ class Utils:
         except FileNotFoundError:
             return {}
         
+        
+    @staticmethod
+    def load_svgs(folder: str, scale: float, tint=settings.PIP_BOY_LIGHT):
+        """
+        Load and tint all SVG images in the specified folder.
+        """
+        try:
+            images = [
+                Utils.tint_image(
+                    pygame.image.load_sized_svg(os.path.join(folder, f), (scale, scale)).convert_alpha(),
+                    tint
+                ) for f in sorted(os.listdir(folder)) if f.endswith(".svg")
+            ]
+            return images
+        except FileNotFoundError:
+            return []
+        
     
     @staticmethod
     def load_svg(scale: int, path: str, tint=settings.PIP_BOY_LIGHT):
@@ -82,6 +99,8 @@ class Utils:
                 pygame.image.load_sized_svg(path, (scale, scale)).convert_alpha(),
                 tint
             )
+
+
 
     
     @staticmethod

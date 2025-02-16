@@ -148,7 +148,7 @@ for item in _inventory.get_all_items():
 # Stat Tab Settings
 # ------------------
 # Status subtab
-VAULTBOY_SCALE = 600
+VAULTBOY_SCALE = 2
 VAULT_BOY_OFFSET = 12
 LIMB_POSITIONS = [
     LimbPosition(0, 10, 'head'),

@@ -19,43 +19,63 @@ class StatusTab:
         
         # Initialize components
         self._init_vault_boy()
-        self._init_player_name()
+        self.player_surface = self.small_font.render(settings.PLAYER_NAME, True, settings.PIP_BOY_LIGHT)
         
         self.setup_limb_damage(settings.DEFAULT_LIMB_DAMAGE)
 
         self.setup_stats_display(settings.DEFAULT_STATS_DAMAGE, settings.DEFAULT_STATS_ARMOR)
 
+
+
+
     def _init_vault_boy(self):
         """Initialize vault boy animation components"""
-
-        self.vaultboy_legs = [
-            Utils.load_images(os.path.join(settings.STAT_TAB_BODY_BASE_FOLDER, i))
-            for i in os.listdir(settings.STAT_TAB_BODY_BASE_FOLDER) if "legs" in i
-        ][0]
         
-        self.vaultboy_heads = Utils.load_images(os.path.join(settings.STAT_TAB_BODY_BASE_FOLDER, "heads"))
-        
-
-        print(self.vaultboy_legs)
-        print(self.vaultboy_heads)
-        
-        self.vaultboy_legs_index = 0
-        self.vaultboy_heads_index = 0
+        legs_folder = "legs1"
+        head_index = 0
         
         vaultboy_scale = settings.SCREEN_HEIGHT / settings.VAULTBOY_SCALE 
-        self._setup_vault_boy_positions(vaultboy_scale)
         
-        self.vaultboy_steps = (0.0, 0.0), (0.5, 1.8), (0.8, 3.0), (1.0, 1.8), (1.5, 0.1), (1.1, 1.3), (1.0, 3.0), (0.7, 2.3)
+        # Load vaultboy legs svgs
+        self.vaultboy_legs = Utils.load_svgs(os.path.join(settings.STAT_TAB_BODY_SVG_BASE_FOLDER, legs_folder), vaultboy_scale)
         
-    def _init_player_name(self):
-        self.player_surface = self.small_font.render(settings.PLAYER_NAME, True, settings.PIP_BOY_LIGHT)
- 
+        self.vaultboy_head = Utils.load_svgs(os.path.join(settings.STAT_TAB_BODY_SVG_BASE_FOLDER, "heads"), vaultboy_scale)[head_index]
+        
+        self.vaultboy_head_offsets = self._load_head_offsets(legs_folder)
+        
+        self.vaultboy_surface = pygame.Surface(
+            (self.draw_space.width, self.draw_space.height),
+            pygame.SRCALPHA
+        )
+        
+        self.vaultboy_screen_position = self.vaultboy_surface.get_rect(
+            center=(self.draw_space.x + self.draw_space.width // 2,
+                     self.draw_space.y + self.draw_space.height // 2)
+        )
+        
+        self.vaultboy_index = 0
+        self.vaultboy_heads_index = 0
+        
 
-    def _setup_vault_boy_positions(self, scale: float):
+
+    def _load_head_offsets(self, legs_folder: str) -> List:
+        
+        ini_file = os.path.join(settings.STAT_TAB_BODY_SVG_BASE_FOLDER, legs_folder, settings.STAT_TAB_HEAD_OFFSET_INI)
+        print(ini_file)
+        
+        try:
+            with open(ini_file, 'r') as f:
+                head_offsets = ([tuple(map(float, pos.split(","))) for pos in f.read().split(";")])
+        except FileNotFoundError:
+            # Fill with 0 offsets with the same length as the number of frames
+            head_offsets = ([(0.0, 0.0) for _ in range(len(self.vaultboy_legs))])
+            
+        return head_offsets
+                
+     
+
+    def _setup_vault_boy_positions(self):
         """Set up vault boy animation positions and scaling"""
-        self.scaled_legs = [Utils.scale_image(img, scale) for img in self.vaultboy_legs]
-        self.scaled_heads = [Utils.scale_image(img, scale) for img in self.vaultboy_heads]
-
         self.vaultboy_surface = pygame.Surface(
             (self.draw_space.width, self.draw_space.height), 
             pygame.SRCALPHA
@@ -75,6 +95,8 @@ class StatusTab:
             center=(self.draw_space.x + self.draw_space.width // 2,
                    self.draw_space.y + self.draw_space.height // 2)
         )
+        
+        
     def _calculate_stats_width(self, big_rect_size: int, small_rect_size: int, 
                                 num_damage_icons: int, num_armor_icons: int) -> int:
             """Calculate total width needed for stats display"""
@@ -240,19 +262,16 @@ class StatusTab:
         """Update vault boy animation frame"""
         while self.vaultboy_thread_running:
             
-            step_offset_y = self.vaultboy_steps[self.vaultboy_legs_index][1]
-            step_offset_x = self.vaultboy_steps[self.vaultboy_legs_index][0]
+            step_offset_y = self.vaultboy_head_offsets[self.vaultboy_index][1]
+            step_offset_x = self.vaultboy_head_offsets[self.vaultboy_index][0]
             self.vaultboy_surface.fill((0, 0, 0, 0))
             
-            for part, pos in self.positions.items():
-                images = self.scaled_legs if part == 'legs' else self.scaled_heads
-                index = self.vaultboy_legs_index if part == 'legs' else self.vaultboy_heads_index
-                
+            for leg in self.vaultboy_legs:
                 self.vaultboy_surface.blit(
-                    images[index],
-                    (pos[0] + step_offset_x, pos[1] + step_offset_y)
+                    self.vaultboy_legs[self.vaultboy_index],
+                    (15, 15)
                 )
-            self.vaultboy_legs_index = (self.vaultboy_legs_index + 1) % len(self.scaled_legs)
+            self.vaultboy_index = (self.vaultboy_index + 1) % len(self.vaultboy_legs)
             pygame.time.wait(settings.SPEED * 150)
     
     def handle_threads(self, tab_selected: bool):
@@ -276,7 +295,7 @@ class StatusTab:
             self.render_limb_damage()
 
     def render_vaultboy(self):
-        self.screen.blit(self.vaultboy_surface, self.screen_position)
+        self.screen.blit(self.vaultboy_surface, self.vaultboy_screen_position)
 
     def render_player_name(self):
         player_pos = (
