@@ -1,3 +1,4 @@
+import os
 import pygame
 import settings
 from threading import Thread
@@ -26,13 +27,17 @@ class StatusTab:
 
     def _init_vault_boy(self):
         """Initialize vault boy animation components"""
-        # self.vaultboy_legs = Utils.load_images(settings.STAT_TAB_LEGS_BASE_FOLDER)
-        # self.vaultboy_heads = Utils.load_images(settings.STAT_TAB_HEAD_BASE_FOLDER)
-        # Create array with all vaultboy legs
-        self.vaultboy_legs = [
-            Utils.load_images(settings.STAT_TAB_LEGS_BASE_FOLDER + f"{i}.png")[0] for i in range(1, 9)
-        ]
 
+        self.vaultboy_legs = [
+            Utils.load_images(os.path.join(settings.STAT_TAB_BODY_BASE_FOLDER, i))
+            for i in os.listdir(settings.STAT_TAB_BODY_BASE_FOLDER) if "legs" in i
+        ][0]
+        
+        self.vaultboy_heads = Utils.load_images(os.path.join(settings.STAT_TAB_BODY_BASE_FOLDER, "heads"))
+        
+
+        print(self.vaultboy_legs)
+        print(self.vaultboy_heads)
         
         self.vaultboy_legs_index = 0
         self.vaultboy_heads_index = 0
