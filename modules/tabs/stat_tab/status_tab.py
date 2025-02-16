@@ -26,8 +26,13 @@ class StatusTab:
 
     def _init_vault_boy(self):
         """Initialize vault boy animation components"""
-        self.vaultboy_legs = Utils.load_images(settings.STAT_TAB_LEGS_BASE_FOLDER)
-        self.vaultboy_heads = Utils.load_images(settings.STAT_TAB_HEAD_BASE_FOLDER)
+        # self.vaultboy_legs = Utils.load_images(settings.STAT_TAB_LEGS_BASE_FOLDER)
+        # self.vaultboy_heads = Utils.load_images(settings.STAT_TAB_HEAD_BASE_FOLDER)
+        # Create array with all vaultboy legs
+        self.vaultboy_legs = [
+            Utils.load_images(settings.STAT_TAB_LEGS_BASE_FOLDER + f"{i}.png")[0] for i in range(1, 9)
+        ]
+
         
         self.vaultboy_legs_index = 0
         self.vaultboy_heads_index = 0
@@ -35,7 +40,6 @@ class StatusTab:
         vaultboy_scale = settings.SCREEN_HEIGHT / settings.VAULTBOY_SCALE 
         self._setup_vault_boy_positions(vaultboy_scale)
         
-        # Create animation step sequence: 0->3, 3->0
         self.vaultboy_steps = (0.0, 0.0), (0.5, 1.8), (0.8, 3.0), (1.0, 1.8), (1.5, 0.1), (1.1, 1.3), (1.0, 3.0), (0.7, 2.3)
         
     def _init_player_name(self):
