@@ -13,12 +13,12 @@ class StatusTab:
         self.screen = screen
         self.tab_instance = tab_instance
         self.draw_space = draw_space
-        self.vaultboy_thread = None
-        self.vaultboy_thread_running = False
+        self.conditionboy_thread = None
+        self.conditionboy_thread_running = False
         self.small_font = pygame.font.Font(settings.ROBOTO_CONDENSED_BOLD_PATH, 12)
         
         # Initialize components
-        self._init_vault_boy()
+        self._init_conditionboy()
         self.player_surface = self.small_font.render(settings.PLAYER_NAME, True, settings.PIP_BOY_LIGHT)
         
         self.setup_limb_damage(settings.DEFAULT_LIMB_DAMAGE)
@@ -28,55 +28,67 @@ class StatusTab:
 
 
 
-    def _init_vault_boy(self):
+    def _init_conditionboy(self):
         """Initialize vault boy animation components"""
         
         legs_folder = "legs1"
         head_index = 0
         
-        vaultboy_scale = settings.SCREEN_HEIGHT / settings.VAULTBOY_SCALE 
+        conditionboy_scale = settings.SCREEN_HEIGHT / settings.CONDITIONBOY_SCALE 
         
-        # Load vaultboy legs svgs
-        self.vaultboy_legs = Utils.load_svgs(os.path.join(settings.STAT_TAB_BODY_SVG_BASE_FOLDER, legs_folder), vaultboy_scale)
+        # Load conditionboy legs svgs
+        self.conditionboy_legs = Utils.load_svgs(os.path.join(settings.STAT_TAB_BODY_SVG_BASE_FOLDER, legs_folder), conditionboy_scale)
         
-        self.vaultboy_head = Utils.load_svgs(os.path.join(settings.STAT_TAB_BODY_SVG_BASE_FOLDER, "heads"), vaultboy_scale)[head_index]
+        self.conditionboy_head = Utils.load_svgs(os.path.join(settings.STAT_TAB_BODY_SVG_BASE_FOLDER, "heads"), conditionboy_scale / 2)[head_index]
         
-        self.vaultboy_head_offsets = self._load_head_offsets(legs_folder)
+        self.conditionboy_legs_centers = [leg.width // 2 for leg in self.conditionboy_legs]
         
-        self.vaultboy_surface = pygame.Surface(
+        self.conditionboy_head_offsets, self.conditionboy_body_centers = self._load_conditionboy_offsets(legs_folder)
+        print(self.conditionboy_head_offsets)
+        print(self.conditionboy_body_centers)
+        
+        self.conditionboy_surface = pygame.Surface(
             (self.draw_space.width, self.draw_space.height),
             pygame.SRCALPHA
         )
         
-        self.vaultboy_screen_position = self.vaultboy_surface.get_rect(
+        self.conditionboy_screen_position = self.conditionboy_surface.get_rect(
             center=(self.draw_space.x + self.draw_space.width // 2,
                      self.draw_space.y + self.draw_space.height // 2)
         )
         
-        self.vaultboy_index = 0
-        self.vaultboy_heads_index = 0
+        self.conditionboy_index = 0
+        self.conditionboy_heads_index = 0
         
 
 
-    def _load_head_offsets(self, legs_folder: str) -> List:
+    def _load_conditionboy_offsets(self, legs_folder: str) -> List:
         
-        ini_file = os.path.join(settings.STAT_TAB_BODY_SVG_BASE_FOLDER, legs_folder, settings.STAT_TAB_HEAD_OFFSET_INI)
-        print(ini_file)
+        ini_file = os.path.join(settings.STAT_TAB_BODY_SVG_BASE_FOLDER, legs_folder, settings.STAT_TAB_OFFSET_INI)
         
         try:
             with open(ini_file, 'r') as f:
-                head_offsets = ([tuple(map(float, pos.split(","))) for pos in f.read().split(";")])
+                
+                # Split into head_positions and body_centers depending on the prefix
+                head_string, body_string = f.read().split("BODY")
+                
+                head_string = head_string.replace("HEAD", "").strip()
+                
+                head_offsets = ([tuple(map(float, pos.split(","))) for pos in head_string.split(";")])
+                body_centers = ([tuple(map(float, pos.split(","))) for pos in body_string.split(";")])
+                
         except FileNotFoundError:
             # Fill with 0 offsets with the same length as the number of frames
-            head_offsets = ([(0.0, 0.0) for _ in range(len(self.vaultboy_legs))])
+            head_offsets = ([(0.0, 0.0) for _ in range(len(self.conditionboy_legs))])
+            body_centers = ([(0.0, 0.0) for _ in range(len(self.conditionboy_legs))])
             
-        return head_offsets
+        return head_offsets, body_centers
                 
      
 
     def _setup_vault_boy_positions(self):
         """Set up vault boy animation positions and scaling"""
-        self.vaultboy_surface = pygame.Surface(
+        self.conditionboy_surface = pygame.Surface(
             (self.draw_space.width, self.draw_space.height), 
             pygame.SRCALPHA
         )
@@ -85,13 +97,13 @@ class StatusTab:
         self.positions = {}
         for part in ("legs", "head"):
             images = self.scaled_legs if part == 'legs' else self.scaled_heads
-            x_center = (self.vaultboy_surface.get_width() // 2 - 
+            x_center = (self.conditionboy_surface.get_width() // 2 - 
                        images[0].get_width() // 2)
-            y_pos = self.draw_space.top + (settings.VAULT_BOY_OFFSET if part == 'legs' else -(settings.VAULT_BOY_OFFSET * 1.5))
+            y_pos = self.draw_space.top + (settings.CONDITIONBOY_OFFSET if part == 'legs' else -(settings.CONDITIONBOY_OFFSET * 1.5))
             self.positions[part] = (x_center, y_pos)
 
         # Center animation surface
-        self.screen_position = self.vaultboy_surface.get_rect(
+        self.screen_position = self.conditionboy_surface.get_rect(
             center=(self.draw_space.x + self.draw_space.width // 2,
                    self.draw_space.y + self.draw_space.height // 2)
         )
@@ -258,44 +270,59 @@ class StatusTab:
 
 
 
-    def update_vaultboy(self):
+    def update_conditionboy(self):
         """Update vault boy animation frame"""
-        while self.vaultboy_thread_running:
+        while self.conditionboy_thread_running:
+            self.conditionboy_surface.fill((0, 0, 0, 0))
             
-            step_offset_y = self.vaultboy_head_offsets[self.vaultboy_index][1]
-            step_offset_x = self.vaultboy_head_offsets[self.vaultboy_index][0]
-            self.vaultboy_surface.fill((0, 0, 0, 0))
+            step_offset_x = (self.conditionboy_head_offsets[self.conditionboy_index][0]) * self.draw_space.width / 3000
+            step_offset_y = (self.conditionboy_head_offsets[self.conditionboy_index][1]) * self.draw_space.height / 5000
             
-            for leg in self.vaultboy_legs:
-                self.vaultboy_surface.blit(
-                    self.vaultboy_legs[self.vaultboy_index],
-                    (15, 15)
-                )
-            self.vaultboy_index = (self.vaultboy_index + 1) % len(self.vaultboy_legs)
-            pygame.time.wait(settings.SPEED * 150)
+            test = (-48.00, -39.25),(-43.15, -44.50),(-36.20, -48.00),(-22.35, -45.50),(-44.25, -41.75),(-22.25, -44.35),(-35.30, -47.95),(-42.95, -45.50)
+            test2 = 113.20, 102.00, 86.95, 60.60, 90.00, 66.20, 88.00, 102.15
+            
+            x_offset_body = self.draw_space.centerx - (((self.conditionboy_body_centers[self.conditionboy_index][0]) / 3000)  * self.draw_space.width)
+            y_offset_body = self.draw_space.centery - (((self.conditionboy_body_centers[self.conditionboy_index][1]) / 5000)  * self.draw_space.height) - 45
+            
+            
+            # Draw cirlce at step offset
+            pygame.draw.circle(self.conditionboy_surface, (255, 0, 0), (int(self.draw_space.centerx + step_offset_x - 10), int(self.draw_space.centery + step_offset_y - 45)), 5)
+            
+            self.conditionboy_surface.blit(
+                self.conditionboy_legs[self.conditionboy_index],
+                (x_offset_body, y_offset_body))
+            
+            center_body = x_offset_body + (self.conditionboy_legs[self.conditionboy_index].get_width() / 2)
+            
+            # Draw lines for x and y body offset
+
+            
+            self.conditionboy_index = (self.conditionboy_index + 1) % len(self.conditionboy_legs)
+            
+            pygame.time.wait(settings.SPEED * 250)
     
     def handle_threads(self, tab_selected: bool):
         """ Handle the threads"""
-        if tab_selected and not self.vaultboy_thread_running:
-            self.vaultboy_thread_running = True
-            self.vaultboy_thread = Thread(target=self.update_vaultboy, daemon=True)
-            self.vaultboy_thread.start()
-        elif not tab_selected and self.vaultboy_thread_running:
-            self.vaultboy_thread_running = False
-            self.vaultboy_thread.join()
+        if tab_selected and not self.conditionboy_thread_running:
+            self.conditionboy_thread_running = True
+            self.conditionboy_thread = Thread(target=self.update_conditionboy, daemon=True)
+            self.conditionboy_thread.start()
+        elif not tab_selected and self.conditionboy_thread_running:
+            self.conditionboy_thread_running = False
+            self.conditionboy_thread.join()
             
 
     def render(self):
         """Render all components to the screen"""
-        self.render_vaultboy()
+        self.render_conditionboy()
         self.render_player_name()
         if hasattr(self, 'stats_surface'):
             self.render_stats()
         if hasattr(self, 'limb_damage_surface'):
             self.render_limb_damage()
 
-    def render_vaultboy(self):
-        self.screen.blit(self.vaultboy_surface, self.vaultboy_screen_position)
+    def render_conditionboy(self):
+        self.screen.blit(self.conditionboy_surface, self.conditionboy_screen_position)
 
     def render_player_name(self):
         player_pos = (

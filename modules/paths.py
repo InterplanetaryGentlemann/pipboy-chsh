@@ -72,7 +72,7 @@ SPECIAL_SOUNDS = "../sounds/pipboy/PerkMenu/SPECIAL"
 MAP_CACHE = "../cache/maps"
 MAP_PLACES_CACHE = "../cache/places"
 MAP_RENDERED_CACHE = "../cache/rendered_maps"
-STAT_TAB_HEAD_OFFSET_INI = "head_positions.ini"
+STAT_TAB_OFFSET_INI = "positions.ini"
 
 
 def get_static_map_url(size, logo_size, apikey, lon, lat, zoom):
