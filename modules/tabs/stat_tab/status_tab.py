@@ -27,7 +27,6 @@ class StatusTab:
 
 
 
-
     def _init_conditionboy(self):
         """Initialize vault boy animation components"""
         
@@ -39,17 +38,13 @@ class StatusTab:
         # Load conditionboy legs svgs
         self.conditionboy_legs, self.conditionboy_transforms = Utils.load_svgs(os.path.join(settings.STAT_TAB_BODY_SVG_BASE_FOLDER, legs_folder), conditionboy_scale, load_transforms=True)
         head_scale = conditionboy_scale / 2
-        self.conditionboy_head = Utils.load_svgs(os.path.join(settings.STAT_TAB_BODY_SVG_BASE_FOLDER, "heads"), head_scale)[head_index]
+        self.conditionboy_head = Utils.load_svg(head_scale, self._get_head_path())
         # self.conditionboy_head_offsets = [tuple(x * head_scale for x in offset) for offset in self.conditionboy_transforms]
     
         self.conditionboy_legs_centerx = self.conditionboy_legs[0].width // 2
         self.conditionboy_legs_centery = self.conditionboy_legs[0].height // 2
         
         self.conditionboy_head_offsets = self._load_conditionboy_offsets(legs_folder)
-                
-        print(self.conditionboy_head_offsets)
-        print(self.conditionboy_transforms)
-
         
         self.conditionboy_surface = pygame.Surface(
             (self.draw_space.width, self.draw_space.height),
@@ -64,7 +59,30 @@ class StatusTab:
         self.conditionboy_index = 0
         self.conditionboy_heads_index = 0
         
-
+ 
+    def _get_head_path(self) -> str:
+        """Get the path of the head image to use"""
+        head_hp = settings.DEFAULT_LIMB_DAMAGE[0]
+        
+        paths = settings.STAT_TAB_HEADS
+        
+        if head_hp >= 20:
+            if settings.RADIATION_CURRENT > 50:
+                return paths["radiated"]
+            elif settings.ADDICTED:
+                return paths["addicted"]
+            elif head_hp >= 50:
+                return paths["normal"]
+            return paths["damaged"]
+        else:
+            if settings.RADIATION_CURRENT > 50:
+                return paths["radiated_crippled"]
+            elif settings.ADDICTED:
+                return paths["addicted_crippled"]
+            return paths["crippled"]
+        
+        
+       
 
     def _load_conditionboy_offsets(self, legs_folder: str) -> List:
         
@@ -86,30 +104,6 @@ class StatusTab:
             return [(0.0, 0.0) for _ in range(len(self.conditionboy_legs))]
             
                 
-     
-
-    def _setup_vault_boy_positions(self):
-        """Set up vault boy animation positions and scaling"""
-        self.conditionboy_surface = pygame.Surface(
-            (self.draw_space.width, self.draw_space.height), 
-            pygame.SRCALPHA
-        )
-        
-        # Calculate centered positions
-        self.positions = {}
-        for part in ("legs", "head"):
-            images = self.scaled_legs if part == 'legs' else self.scaled_heads
-            x_center = (self.conditionboy_surface.get_width() // 2 - 
-                       images[0].get_width() // 2)
-            y_pos = self.draw_space.top + (settings.CONDITIONBOY_OFFSET if part == 'legs' else -(settings.CONDITIONBOY_OFFSET * 1.5))
-            self.positions[part] = (x_center, y_pos)
-
-        # Center animation surface
-        self.screen_position = self.conditionboy_surface.get_rect(
-            center=(self.draw_space.x + self.draw_space.width // 2,
-                   self.draw_space.y + self.draw_space.height // 2)
-        )
-        
         
     def _calculate_stats_width(self, big_rect_size: int, small_rect_size: int, 
                                 num_damage_icons: int, num_armor_icons: int) -> int:
@@ -285,10 +279,7 @@ class StatusTab:
             
             x_offset_head = self.conditionboy_head_offsets[self.conditionboy_index][0] +  self.draw_space.centerx - self.conditionboy_head.width // 2
             y_offset_head = self.conditionboy_head_offsets[self.conditionboy_index][1] + self.conditionboy_head.height
-            
-            # show dot at x_offset_head, y_offset_head
-            pygame.draw.circle(self.conditionboy_surface, (255, 0, 0), (x_offset_head, y_offset_head + self.conditionboy_head.height), 1)
-            
+                        
             self.conditionboy_surface.blit(
                 self.conditionboy_head,
                 (x_offset_head, y_offset_head)

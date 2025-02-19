@@ -89,7 +89,8 @@ class Utils:
             # Parse first SVG to get reference dimensions
             first_svg_path = os.path.join(folder, svg_files[0])
             first_width, first_height = Utils._get_svg_dimensions(first_svg_path)
-            first_tx, first_ty = Utils._get_svg_transform(first_svg_path)
+            if load_transforms:
+                first_tx, first_ty = Utils._get_svg_transform(first_svg_path)
             
             if first_width <= 0 or first_height <= 0:
                 # Fallback to avoid division by zero
@@ -98,7 +99,6 @@ class Utils:
                 # Uniform scaling based on first SVG's width to preserve aspect ratio
                 scale_factor = scale / first_width
             
-            print(f"First SVG: {first_width}x{first_height}, Scale: {scale_factor}")
             images = []
             transforms = []
             for f in svg_files:
@@ -207,9 +207,16 @@ class Utils:
         Load an SVG file, scale it, and apply a tint.
         """
         if path.endswith(".svg"):
+            width, height = Utils._get_svg_dimensions(path)
+            scale_factor = scale / width
+
+            # Calculate target size while preserving aspect ratio
+            target_width = int(width * scale_factor)
+            target_height = int(height * scale_factor)
+            target_size = (target_width, target_height)
             # Assuming pygame.image.load_sized_svg exists
             return Utils.tint_image(
-                pygame.image.load_sized_svg(path, (scale, scale)).convert_alpha(),
+                pygame.image.load_sized_svg(path, target_size).convert_alpha(),
                 tint
             )
 

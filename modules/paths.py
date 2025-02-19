@@ -16,6 +16,17 @@ CRT_STATIC = "../images/static"
 BOOT_THUMBS = "../images/boot"
 STAT_TAB_BODY_BASE_FOLDER = "../images/stats/body"
 STAT_TAB_BODY_SVG_BASE_FOLDER = "../images/svgs/vaultboy_body"
+
+STAT_TAB_HEADS = {
+    "normal" : "../images/svgs/vaultboy_body/heads/normal.svg",
+    "damaged" : "../images/svgs/vaultboy_body/heads/damaged.svg",
+    "addicted" : "../images/svgs/vaultboy_body/heads/addicted.svg",
+    "radiated" : "../images/svgs/vaultboy_body/heads/radiated.svg",
+    "crippled" : "../images/svgs/vaultboy_body/heads/crippled.svg",
+    "addicted_crippled" : "../images/svgs/vaultboy_body/heads/addicted_crippled.svg",
+    "radiated_crippled" : "../images/svgs/vaultboy_body/heads/radiated_crippled.svg",
+}
+
 STAT_TAB_GUN = "../images/stats/gun.png"
 STAT_TAB_ARMOUR = "../images/stats/helmet.png"
 STAT_TAB_RETICLE = "../images/stats/reticle.png"
