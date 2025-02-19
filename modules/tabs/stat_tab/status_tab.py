@@ -46,9 +46,7 @@ class StatusTab:
         self.conditionboy_legs_centery = self.conditionboy_legs[0].height // 2
         
         self.conditionboy_head_offsets = self._load_conditionboy_offsets(legs_folder)
-        
-        self.conditionboy_head_offsets = [tuple(map(lambda x: x * conditionboy_scale, offset)) for offset in self.conditionboy_head_offsets]
-        
+                
         print(self.conditionboy_head_offsets)
         print(self.conditionboy_transforms)
 
@@ -71,11 +69,17 @@ class StatusTab:
     def _load_conditionboy_offsets(self, legs_folder: str) -> List:
         
         ini_file = os.path.join(settings.STAT_TAB_BODY_SVG_BASE_FOLDER, legs_folder, settings.STAT_TAB_OFFSET_INI)
-        
         try:
             with open(ini_file, 'r') as f:
-                
-                return [tuple(map(float, pos.split(","))) for pos in f.read().split(";")]
+                positions = []
+                for pos in f.read().split(";"):
+                    x, y = pos.split(",")
+                    x = float(x) * self.draw_space.width / settings.CONDITIONBOY_SCALE
+                    y = float(y) * self.draw_space.height / settings.CONDITIONBOY_SCALE
+                    
+                    positions.append((x, y))
+                # return [tuple(map(float, pos.split(","))) for pos in f.read().split(";")]
+                return positions
                 
         except FileNotFoundError:
             # Fill with 0 offsets with the same length as the number of frames
@@ -278,10 +282,12 @@ class StatusTab:
             self.conditionboy_surface.blit(
                 self.conditionboy_legs[self.conditionboy_index],
                 (x_offset_body, y_offset_body))
-                    
-            x_offset_head = self.conditionboy_head_offsets[self.conditionboy_index][0] * 1.89 + 148
-            y_offset_head = self.conditionboy_head_offsets[self.conditionboy_index][1]* 1.2 + 32
             
+            x_offset_head = self.conditionboy_head_offsets[self.conditionboy_index][0] +  self.draw_space.centerx - self.conditionboy_head.width // 2
+            y_offset_head = self.conditionboy_head_offsets[self.conditionboy_index][1] + self.conditionboy_head.height
+            
+            # show dot at x_offset_head, y_offset_head
+            pygame.draw.circle(self.conditionboy_surface, (255, 0, 0), (x_offset_head, y_offset_head + self.conditionboy_head.height), 1)
             
             self.conditionboy_surface.blit(
                 self.conditionboy_head,

@@ -24,7 +24,6 @@ def main():
 
     
     screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT), pygame.FULLSCREEN if settings.RASPI else 0)
-    modes = pygame.display.list_modes()
     pygame.mouse.set_visible(False)
     
     pygame.display.set_caption("Pip-Boy")
