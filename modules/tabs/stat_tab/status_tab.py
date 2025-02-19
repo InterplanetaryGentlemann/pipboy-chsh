@@ -34,18 +34,24 @@ class StatusTab:
         legs_folder = "legs1"
         head_index = 0
         
-        conditionboy_scale = settings.SCREEN_HEIGHT / settings.CONDITIONBOY_SCALE 
+        conditionboy_scale = self.draw_space.height / settings.CONDITIONBOY_SCALE
         
         # Load conditionboy legs svgs
-        self.conditionboy_legs = Utils.load_svgs(os.path.join(settings.STAT_TAB_BODY_SVG_BASE_FOLDER, legs_folder), conditionboy_scale)
+        self.conditionboy_legs, self.conditionboy_transforms = Utils.load_svgs(os.path.join(settings.STAT_TAB_BODY_SVG_BASE_FOLDER, legs_folder), conditionboy_scale, load_transforms=True)
+        head_scale = conditionboy_scale / 2
+        self.conditionboy_head = Utils.load_svgs(os.path.join(settings.STAT_TAB_BODY_SVG_BASE_FOLDER, "heads"), head_scale)[head_index]
+        # self.conditionboy_head_offsets = [tuple(x * head_scale for x in offset) for offset in self.conditionboy_transforms]
+    
+        self.conditionboy_legs_centerx = self.conditionboy_legs[0].width // 2
+        self.conditionboy_legs_centery = self.conditionboy_legs[0].height // 2
         
-        self.conditionboy_head = Utils.load_svgs(os.path.join(settings.STAT_TAB_BODY_SVG_BASE_FOLDER, "heads"), conditionboy_scale / 2)[head_index]
+        self.conditionboy_head_offsets = self._load_conditionboy_offsets(legs_folder)
         
-        self.conditionboy_legs_centers = [leg.width // 2 for leg in self.conditionboy_legs]
+        self.conditionboy_head_offsets = [tuple(map(lambda x: x * conditionboy_scale, offset)) for offset in self.conditionboy_head_offsets]
         
-        self.conditionboy_head_offsets, self.conditionboy_body_centers = self._load_conditionboy_offsets(legs_folder)
         print(self.conditionboy_head_offsets)
-        print(self.conditionboy_body_centers)
+        print(self.conditionboy_transforms)
+
         
         self.conditionboy_surface = pygame.Surface(
             (self.draw_space.width, self.draw_space.height),
@@ -69,20 +75,12 @@ class StatusTab:
         try:
             with open(ini_file, 'r') as f:
                 
-                # Split into head_positions and body_centers depending on the prefix
-                head_string, body_string = f.read().split("BODY")
-                
-                head_string = head_string.replace("HEAD", "").strip()
-                
-                head_offsets = ([tuple(map(float, pos.split(","))) for pos in head_string.split(";")])
-                body_centers = ([tuple(map(float, pos.split(","))) for pos in body_string.split(";")])
+                return [tuple(map(float, pos.split(","))) for pos in f.read().split(";")]
                 
         except FileNotFoundError:
             # Fill with 0 offsets with the same length as the number of frames
-            head_offsets = ([(0.0, 0.0) for _ in range(len(self.conditionboy_legs))])
-            body_centers = ([(0.0, 0.0) for _ in range(len(self.conditionboy_legs))])
+            return [(0.0, 0.0) for _ in range(len(self.conditionboy_legs))]
             
-        return head_offsets, body_centers
                 
      
 
@@ -274,32 +272,25 @@ class StatusTab:
         """Update vault boy animation frame"""
         while self.conditionboy_thread_running:
             self.conditionboy_surface.fill((0, 0, 0, 0))
-            
-            step_offset_x = (self.conditionboy_head_offsets[self.conditionboy_index][0]) * self.draw_space.width / 3000
-            step_offset_y = (self.conditionboy_head_offsets[self.conditionboy_index][1]) * self.draw_space.height / 5000
-            
-            test = (-48.00, -39.25),(-43.15, -44.50),(-36.20, -48.00),(-22.35, -45.50),(-44.25, -41.75),(-22.25, -44.35),(-35.30, -47.95),(-42.95, -45.50)
-            test2 = 113.20, 102.00, 86.95, 60.60, 90.00, 66.20, 88.00, 102.15
-            
-            x_offset_body = self.draw_space.centerx - (((self.conditionboy_body_centers[self.conditionboy_index][0]) / 3000)  * self.draw_space.width)
-            y_offset_body = self.draw_space.centery - (((self.conditionboy_body_centers[self.conditionboy_index][1]) / 5000)  * self.draw_space.height) - 45
-            
-            
-            # Draw cirlce at step offset
-            pygame.draw.circle(self.conditionboy_surface, (255, 0, 0), (int(self.draw_space.centerx + step_offset_x - 10), int(self.draw_space.centery + step_offset_y - 45)), 5)
+            x_offset_body = self.draw_space.centerx - (self.conditionboy_transforms[self.conditionboy_index][0]) - self.conditionboy_legs_centerx
+            y_offset_body = self.draw_space.centery / 2 - (self.conditionboy_transforms[self.conditionboy_index][1]) - self.conditionboy_legs_centery / 2 + 10
             
             self.conditionboy_surface.blit(
                 self.conditionboy_legs[self.conditionboy_index],
                 (x_offset_body, y_offset_body))
+                    
+            x_offset_head = self.conditionboy_head_offsets[self.conditionboy_index][0] * 1.89 + 148
+            y_offset_head = self.conditionboy_head_offsets[self.conditionboy_index][1]* 1.2 + 32
             
-            center_body = x_offset_body + (self.conditionboy_legs[self.conditionboy_index].get_width() / 2)
             
-            # Draw lines for x and y body offset
-
+            self.conditionboy_surface.blit(
+                self.conditionboy_head,
+                (x_offset_head, y_offset_head)
+            )
             
             self.conditionboy_index = (self.conditionboy_index + 1) % len(self.conditionboy_legs)
             
-            pygame.time.wait(settings.SPEED * 250)
+            pygame.time.wait(settings.SPEED * 150)
     
     def handle_threads(self, tab_selected: bool):
         """ Handle the threads"""

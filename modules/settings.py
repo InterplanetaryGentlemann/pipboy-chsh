@@ -148,7 +148,7 @@ for item in _inventory.get_all_items():
 # Stat Tab Settings
 # ------------------
 # Status subtab
-CONDITIONBOY_SCALE = 3
+CONDITIONBOY_SCALE = 4
 CONDITIONBOY_OFFSET = 12
 LIMB_POSITIONS = [
     LimbPosition(0, 10, 'head'),

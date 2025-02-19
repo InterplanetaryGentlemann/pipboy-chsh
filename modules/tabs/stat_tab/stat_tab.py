@@ -45,7 +45,7 @@ class StatTab:
         level_surface = self.footer_font.render(level_string, True, settings.PIP_BOY_LIGHT)
         ap_surface = self.footer_font.render(ap_string, True, settings.PIP_BOY_LIGHT)
         
-        xp_rect_base = pygame.Rect(level_surface.width + settings.SCREEN_WIDTH // 3.6, (settings.BOTTOM_BAR_HEIGHT // 1.7) // 2, settings.SCREEN_WIDTH // 3.2, settings.BOTTOM_BAR_HEIGHT - (settings.BOTTOM_BAR_HEIGHT // 1.8))
+        xp_rect_base = pygame.Rect(level_surface.get_width() + settings.SCREEN_WIDTH // 3.6, (settings.BOTTOM_BAR_HEIGHT // 1.7) // 2, settings.SCREEN_WIDTH // 3.2, settings.BOTTOM_BAR_HEIGHT - (settings.BOTTOM_BAR_HEIGHT // 1.8))
         xp_rect = xp_rect_base.copy()
         xp_rect.width = xp_rect.width * (settings.XP_CURRENT / 100)
         
