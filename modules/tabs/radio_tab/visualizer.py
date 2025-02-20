@@ -106,7 +106,7 @@ class Visualizer:
                     self._prepare_wave_pattern('playing')
             elif abs(total_wave) < 0.05 and random.random() < 0.1:
                 self._prepare_wave_pattern('playing')
-
+                
             new_samples.append(total_wave)
 
         # Update wave_points with new batch

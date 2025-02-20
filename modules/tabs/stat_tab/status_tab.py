@@ -30,21 +30,21 @@ class StatusTab:
     def _init_conditionboy(self):
         """Initialize vault boy animation components"""
         
-        legs_folder = "legs1"
-        head_index = 0
-        
         conditionboy_scale = self.draw_space.height / settings.CONDITIONBOY_SCALE
         
+        self.extra_head_x = 0
+        legs_index = self._get_legs_index()
+        
+        
         # Load conditionboy legs svgs
-        self.conditionboy_legs, self.conditionboy_transforms = Utils.load_svgs(os.path.join(settings.STAT_TAB_BODY_SVG_BASE_FOLDER, legs_folder), conditionboy_scale, load_transforms=True)
+        self.conditionboy_legs, self.conditionboy_transforms = Utils.load_svgs(os.path.join(settings.STAT_TAB_BODY_SVG_BASE_FOLDER, f"legs{legs_index}"), conditionboy_scale, load_transforms=True)
         head_scale = conditionboy_scale / 2
         self.conditionboy_head = Utils.load_svg(head_scale, self._get_head_path())
-        # self.conditionboy_head_offsets = [tuple(x * head_scale for x in offset) for offset in self.conditionboy_transforms]
     
         self.conditionboy_legs_centerx = self.conditionboy_legs[0].width // 2
         self.conditionboy_legs_centery = self.conditionboy_legs[0].height // 2
         
-        self.conditionboy_head_offsets = self._load_conditionboy_offsets(legs_folder)
+        self.conditionboy_head_offsets = self._load_conditionboy_offsets(legs_index)
         
         self.conditionboy_surface = pygame.Surface(
             (self.draw_space.width, self.draw_space.height),
@@ -58,24 +58,63 @@ class StatusTab:
         
         self.conditionboy_index = 0
         self.conditionboy_heads_index = 0
-        
+
+
+    def _get_legs_index(self) -> str:
+        """Get the path of the legs image to use based on current limb damage."""
+        # Assume that limb HP is stored in self.stats.limb_hp and that
+        # settings.DEFAULT_LIMB_DAMAGE follows the order:
+        # [head, left arm, right arm, torso, left leg, right leg]
+        default_hp = settings.DEFAULT_LIMB_DAMAGE
+
+        # Determine if each limb is damaged (current < max)
+        left_arm_damaged = default_hp[1] <= settings.CRIPPLED_THRESHOLD
+        right_arm_damaged = default_hp[2] <= settings.CRIPPLED_THRESHOLD
+        left_leg_damaged = default_hp[4] <= settings.CRIPPLED_THRESHOLD
+        right_leg_damaged = default_hp[5] <= settings.CRIPPLED_THRESHOLD
+ 
+        # Use weighted values for each limb:
+        # base state 1 (nothing damaged)
+        state = 1
+        if left_arm_damaged:
+            state += 1       # weight 1
+        if right_arm_damaged:
+            state += 2       # weight 2
+        if left_leg_damaged:
+            self.extra_head_x = 3
+            state += 4       # weight 4
+        if right_leg_damaged:
+            self.extra_head_x = 3
+            state += 8       # weight 8
+
+        # Optionally, if head damage is also considered (index 0)
+        head_damaged = default_hp[0] <= settings.CRIPPLED_THRESHOLD
+        if head_damaged and left_arm_damaged and right_arm_damaged and left_leg_damaged and right_leg_damaged:
+            state = 16  # All limbs (including head) are damaged
+
+        # Return the legs image path based on the computed state.
+        # For example, if images are named "legs_1.svg", "legs_2.svg", etc.
+        return state
+
  
     def _get_head_path(self) -> str:
         """Get the path of the head image to use"""
         head_hp = settings.DEFAULT_LIMB_DAMAGE[0]
         
         paths = settings.STAT_TAB_HEADS
+        crippled_limbs = len([True for x in settings.DEFAULT_LIMB_DAMAGE if x < settings.CRIPPLED_THRESHOLD])
+        print(crippled_limbs)
         
-        if head_hp >= 20:
-            if settings.RADIATION_CURRENT > 50:
+        if head_hp >= settings.CRIPPLED_THRESHOLD:
+            if settings.RADIATION_CURRENT > settings.DAMAGED_THRESHOLD:
                 return paths["radiated"]
             elif settings.ADDICTED:
                 return paths["addicted"]
-            elif head_hp >= 50:
+            elif head_hp >= settings.DAMAGED_THRESHOLD and crippled_limbs <= 2:
                 return paths["normal"]
             return paths["damaged"]
         else:
-            if settings.RADIATION_CURRENT > 50:
+            if settings.RADIATION_CURRENT > settings.DAMAGED_THRESHOLD:
                 return paths["radiated_crippled"]
             elif settings.ADDICTED:
                 return paths["addicted_crippled"]
@@ -84,9 +123,9 @@ class StatusTab:
         
        
 
-    def _load_conditionboy_offsets(self, legs_folder: str) -> List:
+    def _load_conditionboy_offsets(self, legs_index: int) -> List:
         
-        ini_file = os.path.join(settings.STAT_TAB_BODY_SVG_BASE_FOLDER, legs_folder, settings.STAT_TAB_OFFSET_INI)
+        ini_file = os.path.join(settings.STAT_TAB_BODY_SVG_BASE_FOLDER, f"legs{legs_index}", settings.STAT_TAB_OFFSET_INI)
         try:
             with open(ini_file, 'r') as f:
                 positions = []
@@ -97,6 +136,7 @@ class StatusTab:
                     
                     positions.append((x, y))
                 # return [tuple(map(float, pos.split(","))) for pos in f.read().split(";")]
+                print(positions)
                 return positions
                 
         except FileNotFoundError:
@@ -273,11 +313,12 @@ class StatusTab:
             x_offset_body = self.draw_space.centerx - (self.conditionboy_transforms[self.conditionboy_index][0]) - self.conditionboy_legs_centerx
             y_offset_body = self.draw_space.centery / 2 - (self.conditionboy_transforms[self.conditionboy_index][1]) - self.conditionboy_legs_centery / 2 + 10
             
+                        
             self.conditionboy_surface.blit(
                 self.conditionboy_legs[self.conditionboy_index],
                 (x_offset_body, y_offset_body))
             
-            x_offset_head = self.conditionboy_head_offsets[self.conditionboy_index][0] +  self.draw_space.centerx - self.conditionboy_head.width // 2
+            x_offset_head = self.conditionboy_head_offsets[self.conditionboy_index][0] + self.draw_space.centerx - self.conditionboy_head.width / 2 - self.extra_head_x
             y_offset_head = self.conditionboy_head_offsets[self.conditionboy_index][1] + self.conditionboy_head.height
                         
             self.conditionboy_surface.blit(
