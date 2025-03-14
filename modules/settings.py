@@ -1,7 +1,7 @@
 import os
 from data_models import LimbPosition, IconConfig
 from items import ItemLoader, Inventory
-from settings_secrets import *
+#from settings_secrets import *
 import platform
 
 #######################################################
@@ -29,9 +29,9 @@ SUBTABS = {
 # General Settings
 # ------------------
 
-RASPI = True if platform.system() == 'Linux' else False
+RASPI =  False #True if platform.system() == 'Linux' else False
 SPEED = 1
-GAME_ACCURATE_MODE = False
+GAME_ACCURATE_MODE = True
 YEARS_ADDED = 263
 
 # ------------------
@@ -61,7 +61,7 @@ SWITCH_SOUND_CHANCE = 70
 SHOW_CRT = True
 BLOOM_EFFECT = True
 GLITCH_MOVE_CHANCE = 60
-BOOT_SCREEN = False
+BOOT_SCREEN = True
 RANDOM_GLITCHES = True
 RANDOM_GLITCH_CHANCE = 0.5
 
@@ -101,7 +101,7 @@ LEVEL = 28
 XP_CURRENT = 39
 ADDICTED = False
 
-DEFAULT_LIMB_DAMAGE = [70, 14, 69, 54, 28, 100]
+DEFAULT_LIMB_DAMAGE = [10, 14, 10, 10, 10, 10]
 CRIPPLED_THRESHOLD = 20
 DAMAGED_THRESHOLD = 50
 DEFAULT_STATS_DAMAGE = [
@@ -116,7 +116,7 @@ DEFAULT_SPECIAL_STATS = [2, 3, 2, 7, 3, 1, 0]
 SPECIAL_STATS_BONUS = [0, 0, 0, 0, 0, 0, 0]
 
 _inventory = Inventory()
-_inventory.add_item(items['10mm Pistol'], 2)
+_inventory.add_item(items["10mmPistol"], 2)
 _inventory.add_item(items['Fat Man'])
 _inventory.add_item(items['Vault 111 Jumpsuit'])
 _inventory.add_item(items['Road Leathers'], 3)

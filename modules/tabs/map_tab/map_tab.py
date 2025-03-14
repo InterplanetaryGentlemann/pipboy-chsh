@@ -64,7 +64,7 @@ class MapTab:
         footer_surface = pygame.Surface((settings.SCREEN_WIDTH, settings.BOTTOM_BAR_HEIGHT), pygame.SRCALPHA)
         
         footer_surface.blit(date_surface, (2, 2))
-        footer_surface.blit(location_surface, (settings.SCREEN_WIDTH - location_surface.width - 2, 2))
+        footer_surface.blit(location_surface, (settings.SCREEN_WIDTH - location_surface.get_width() - 2, 2))
         
         
         return footer_surface

@@ -2,11 +2,12 @@
 import os
 import sys
 import pygame
+import pygame.freetype
+import traceback
 import settings
 from pipboy import PipBoy
 import threading
 from input_manager import InputManager
-
 
 
 
@@ -21,10 +22,9 @@ def main():
     pygame.init()
     pygame.mixer.init(frequency=44100, size=-16, channels=5)
 
-
     
-    screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT), pygame.FULLSCREEN if settings.RASPI else 0)
-    pygame.mouse.set_visible(False)
+    screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT), pygame.RESIZABLE, pygame.DOUBLEBUF, pygame.FULLSCREEN if settings.RASPI else False)
+    pygame.mouse.set_visible(True)
     
     pygame.display.set_caption("Pip-Boy")
     clock = pygame.time.Clock()

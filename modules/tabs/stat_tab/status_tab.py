@@ -41,8 +41,8 @@ class StatusTab:
         head_scale = conditionboy_scale / 2
         self.conditionboy_head = Utils.load_svg(head_scale, self._get_head_path())
     
-        self.conditionboy_legs_centerx = self.conditionboy_legs[0].width // 2
-        self.conditionboy_legs_centery = self.conditionboy_legs[0].height // 2
+        self.conditionboy_legs_centerx = self.conditionboy_legs[0].get_width() // 2 
+        self.conditionboy_legs_centery = self.conditionboy_legs[0].get_height() // 2
         
         self.conditionboy_head_offsets = self._load_conditionboy_offsets(legs_index)
         
@@ -318,8 +318,8 @@ class StatusTab:
                 self.conditionboy_legs[self.conditionboy_index],
                 (x_offset_body, y_offset_body))
             
-            x_offset_head = self.conditionboy_head_offsets[self.conditionboy_index][0] + self.draw_space.centerx - self.conditionboy_head.width / 2 - self.extra_head_x
-            y_offset_head = self.conditionboy_head_offsets[self.conditionboy_index][1] + self.conditionboy_head.height
+            x_offset_head = self.conditionboy_head_offsets[self.conditionboy_index][0] + self.draw_space.centerx - self.conditionboy_head.get_width() / 2 - self.extra_head_x
+            y_offset_head = self.conditionboy_head_offsets[self.conditionboy_index][1] + self.conditionboy_head.get_height()
                         
             self.conditionboy_surface.blit(
                 self.conditionboy_head,
