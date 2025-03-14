@@ -1,4 +1,5 @@
 import pygame
+import settings
 from queue import Queue
 from threading import Lock
 
@@ -19,8 +20,7 @@ class InputManager:
         if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
             pygame.quit()
             quit()
-
-
+                         
     def handle_input(self, tab_manager):
         with self.get_key_lock:
             while not self.key_queue.empty():

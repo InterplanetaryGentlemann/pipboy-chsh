@@ -7,10 +7,11 @@ from tab_manager import TabManager
 import random  
 
 class PipBoy:
-    def __init__(self, screen, clock, input_manager):
+    def __init__(self, window, screen, clock, input_manager):
         """
         Initialize the PipBoy object.
         """
+        self.window = window
         self.screen = screen
         self.clock = clock
         self.states = iter(["boot", "main"])
@@ -65,6 +66,9 @@ class PipBoy:
         # Render CRT overlay
         if settings.SHOW_CRT:
             self.overlay_instance.render()
+            
+        scaled_win = pygame.transform.smoothscale(self.screen, self.window.get_size())
+        self.window.blit(scaled_win, (0, 0))
         
         pygame.display.flip()
 

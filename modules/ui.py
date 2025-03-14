@@ -8,6 +8,14 @@ from util_functs import Utils
 # Generic UI elements for the Pip-OS project #
 ###############################################
 
+#Settings for the main window
+
+#class screen:
+#    def settings(w, h):
+#        screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT), pygame.RESIZABLE, pygame.FULLSCREEN if settings.RASPI else False)
+#    pygame.mouse.set_visible(True)
+
+
 # Generic list class for displaying items with selection
 # Supports stats display and selection dot rendering
 

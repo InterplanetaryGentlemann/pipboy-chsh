@@ -37,6 +37,8 @@ YEARS_ADDED = 263
 # ------------------
 # Screen Settings
 # ------------------
+WINDOW_WIDTH = 640
+WINDOW_HEIGHT = 510
 SCREEN_WIDTH = 320
 SCREEN_HEIGHT = 255
 FPS = 24
